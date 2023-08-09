@@ -1,0 +1,30 @@
+[package]
+name = "nu_plugin_file"
+version = "0.0.2"
+authors = ["Darren Schroeder"]
+edition = "2021"
+repository = "https://github.com/fdncred/nu_plugin_file"
+description = "a nushell plugin called file"
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# for local development, you can use a path dependency
+nu-plugin = { path = "../nushell/crates/nu-plugin", version = "0.83.2"}
+nu-protocol = { path = "../nushell/crates/nu-protocol", version="0.83.2"}
+# nu-plugin = "0.80.0"
+# nu-protocol = "0.80.0"
+
+serde = { version = "1.0.163", features = ["derive"] }
+serde_json = "1.0.96"
+strum = { version = "0.25.0", features = ["derive"] }
+strum_macros = "0.25.2"
+# tokio = { workspace = true, features = ["fs", "rt", "io-util"] }
+# tokio = { version = "1.29", features = ["fs", "rt", "io-util"] }
+# specta = { workspace = true }
+specta = "1.0.5"
+home = "0.5.5"
+
+[dev-dependencies]
+# tokio = { version = "1.29", features = ["fs", "rt", "macros"] }
