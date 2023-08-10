@@ -1,3 +1,5 @@
+// Attribution: spacedrive
+// https://github.com/spacedriveapp/spacedrive/tree/main/crates/file-ext
 pub mod extensions;
 // mod file;
 pub mod kind;
