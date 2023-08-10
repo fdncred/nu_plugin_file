@@ -20,6 +20,7 @@ pub enum ExtensionPossibility {
 pub struct MagicBytesMeta {
     pub offset: usize,
     pub length: usize,
+    pub bytes: Vec<u8>,
 }
 
 pub trait MagicBytes: Sized + PartialEq {
@@ -47,7 +48,6 @@ macro_rules! magic_byte_offset {
         $val
     };
 }
-// pub(crate) use magic_byte_offset;
 
 macro_rules! extension_enum {
 	(
@@ -149,6 +149,7 @@ macro_rules! extension_category_enum {
 						$( MagicBytesMeta {
 							length: (&[$($crate::magic_byte_value!($magic_bytes)),*] as &[u8]).len(),
 							offset: $crate::magic_byte_offset!($($offset)?),
+							bytes: ((&[$($crate::magic_byte_value!($magic_bytes)),*] as &[u8])).to_vec(),
 						}, )+
 					] ),*
 				}

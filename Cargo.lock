@@ -411,6 +411,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -602,6 +611,7 @@ name = "nu_plugin_file"
 version = "0.0.2"
 dependencies = [
  "home",
+ "itertools 0.11.0",
  "nu-plugin",
  "nu-protocol",
  "serde",
@@ -882,7 +892,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4605306321c356e03873b8ee71d7592a5e7c508add325c3ed0677c16fdf1bcfb"
 dependencies = [
  "Inflector",
- "itertools",
+ "itertools 0.10.5",
  "proc-macro2",
  "quote",
  "syn 1.0.109",
@@ -891,9 +901,9 @@ dependencies = [
 
 [[package]]
 name = "strip-ansi-escapes"
-version = "0.1.2"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dad0ed65755f6fdd06f7afd1afefe7b2b220c2b197844687c2ea9d6d4807305e"
+checksum = "55ff8ef943b384c414f54aefa961dd2bd853add74ec75e7ac74cf91dba62bcfa"
 dependencies = [
  "vte",
 ]
