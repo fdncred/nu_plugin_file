@@ -1,36 +1,36 @@
-# nu_plugin_template
+# nu_plugin_file
 
-This is a starter plugin. It just lays out one way to make nushell plugins with nushell version 0.72.0
-
-This template is intended to be used with [cargo-generate](https://github.com/cargo-generate/cargo-generate) in order to quickly
-bootstrap nushell plugin projects.
+This nushell plugin will open files to inspect them and report back a little information. It uses magic bytes to determine many file formats. The core code was "borrowed" from a [spacedrive](https://github.com/spacedriveapp/spacedrive/tree/main/crates/file-ext) crate that I thought looked interesting.
 
 ## Usage:
 
+```nushell
+❯ help file
+View file format information
+
+Usage:
+  > file <filename>
+
+Flags:
+  -h, --help - Display the help message for this command
+
+Parameters:
+  filename <string>: full path to file name to inspect
+
+Examples:
+  Get format information from file
+  > file some.jpg
+  ╭──────────────┬──────────╮
+  │ description  │ Image    │
+  │ format       │ jpg      │
+  │ magic_offset │ 0        │
+  │ magic_length │ 2        │
+  │ magic_bytes  │ [FF, D8] │
+  ╰──────────────┴──────────╯
 ```
-> cargo generate --git https://github.com/fdncred/nu_plugin_template
-Project Name: <you choose a name here like nu-plugin-random>
-What should we call the plugin struct?: <you chose a name like RandomStruct>
-What is the name of this plugin package? <you choose a name like random>
-> cd nu-plugin-random
-> cargo build
 
-# You only need to run this once per nushell session, or after updating the
-# signature of the plugin.
-> register ./target/debug/nu-plugin-random
-
-> 'pas' | random faux
-Hello, faux! with value: pas
-```
-
-## Config values
-
-- `plugin_name` - all nushell plugins are binaries with the name format
-`nu_plugin_SOMETHING`. This is how nushell discovers them. You need to tell this
-generator what that `SOMETHING` is. If you enter `random` as the plugin name,
-your binary will be called `nu_plugin_random`, and you will run it by entering
-`random`.
-
-- `plugin_struct` - name of the struct that implements the `Plugin` trait from
-`nu-plugin` crate.
-
+## Installation
+1. clone repo `git clone https://github.com/fdncred/nu_plugin_file.git`
+2. install with cargo `cargo install --path .`
+3. register with nushell `register /path/to/nu_plugin_file`
+4. inspect a file `file some.jpg`
