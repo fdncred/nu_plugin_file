@@ -7,7 +7,9 @@ pub mod magic;
 use crate::{extensions::Extension, magic::MagicBytes, magic::MagicBytesMeta};
 use home::home_dir;
 use nu_plugin::{serve_plugin, EvaluatedCall, LabeledError, MsgPackSerializer, Plugin};
-use nu_protocol::{Category, PluginExample, PluginSignature, Span, Spanned, SyntaxShape, Value};
+use nu_protocol::{
+    record, Category, PluginExample, PluginSignature, Record, Span, Spanned, SyntaxShape, Value,
+};
 use std::path::Path;
 
 struct Implementation;
@@ -31,7 +33,7 @@ impl Plugin for Implementation {
             .plugin_examples(vec![PluginExample {
                 description: "Get format information from file".into(),
                 example: "file some.jpg".into(),
-                result: Some(Value::Record {
+                result: Some(Value::test_record(Record {
                     cols: vec![
                         "description".into(),
                         "format".into(),
@@ -46,8 +48,7 @@ impl Plugin for Implementation {
                         Value::string("2", Span::test_data()),
                         Value::string("[FF, D8]", Span::test_data()),
                     ],
-                    span: Span::test_data(),
-                }),
+                })),
             }])]
     }
 
@@ -212,13 +213,6 @@ fn get_magic_details(
     data_format: String,
     span: Span,
 ) -> Value {
-    // let mut details = vec![];
-    // details.push(Value::string(format, magic.span));
-    // details.push(Value::string(magic.format, magic.span));
-    // details.push(Value::string(magic.offset.to_string(), magic.span));
-    // details.push(Value::string(magic.length.to_string(), magic.span));
-    // details.push(Value::string(format!("{:X?}", magic.bytes), magic.span));
-    // details
     let offsets = magic
         .iter()
         .map(|b| b.offset.to_string())
@@ -231,44 +225,30 @@ fn get_magic_details(
         .iter()
         .map(|b| format!("{:X?}", b.bytes.clone()))
         .collect::<Vec<_>>();
-    let cols = vec![
-        "description".into(),
-        "format".into(),
-        "magic_offset".into(),
-        "magic_length".into(),
-        "magic_bytes".into(),
-    ];
-    let vals = vec![
-        Value::string(format, span),
-        Value::string(data_format, span),
-        Value::string(offsets.join(", "), span),
-        Value::string(lengths.join(", "), span),
-        Value::string(format!("{}", mbytes.join(", ")), span),
-    ];
 
-    Value::Record { cols, vals, span }
+    Value::record(
+        record! {
+            "description" => Value::string(format, span),
+            "format" => Value::string(data_format, span),
+            "magic_offset" => Value::string(offsets.join(", "), span),
+            "magic_length" => Value::string(lengths.join(", "), span),
+            "magic_bytes" => Value::string(format!("{}", mbytes.join(", ")), span),
+        },
+        span,
+    )
 }
 
 fn get_text_format_details(format: &str, text_format: String, span: Span) -> Value {
-    let cols = vec![
-        "description".into(),
-        "format".into(),
-        "magic_offset".into(),
-        "magic_length".into(),
-        "magic_bytes".into(),
-    ];
-
-    Value::Record {
-        cols,
-        vals: vec![
-            Value::string(format, span),
-            Value::string(text_format, span),
-            Value::nothing(span),
-            Value::nothing(span),
-            Value::nothing(span),
-        ],
+    Value::record(
+        record! {
+            "description" => Value::string(format, span),
+            "format" => Value::string(text_format, span),
+            "magic_offset" => Value::nothing(span),
+            "magic_length" => Value::nothing(span),
+            "magic_bytes" => Value::nothing(span),
+        },
         span,
-    }
+    )
 }
 
 fn main() {
