@@ -199,11 +199,11 @@ impl Plugin for Implementation {
                         ));
                     }
                 },
-                None => Ok(Value::Nothing { span: call.head }),
+                None => Ok(Value::nothing(call.head)),
             };
         }
 
-        Ok(Value::Nothing { span: call.head })
+        Ok(Value::nothing(call.head))
     }
 }
 
