@@ -8,7 +8,7 @@ use crate::{extensions::Extension, magic::MagicBytes, magic::MagicBytesMeta};
 use home::home_dir;
 use nu_plugin::{serve_plugin, EvaluatedCall, LabeledError, MsgPackSerializer, Plugin};
 use nu_protocol::{
-    record, Category, PluginExample, PluginSignature, Record, Span, Spanned, SyntaxShape, Value,
+    record, Category, PluginExample, PluginSignature, Span, Spanned, SyntaxShape, Value,
 };
 use std::path::Path;
 
@@ -33,22 +33,12 @@ impl Plugin for Implementation {
             .plugin_examples(vec![PluginExample {
                 description: "Get format information from file".into(),
                 example: "file some.jpg".into(),
-                result: Some(Value::test_record(Record {
-                    cols: vec![
-                        "description".into(),
-                        "format".into(),
-                        "magic_offset".into(),
-                        "magic_length".into(),
-                        "magic_bytes".into(),
-                    ],
-                    vals: vec![
-                        Value::string("Image", Span::test_data()),
-                        Value::string("jpg", Span::test_data()),
-                        Value::string("0", Span::test_data()),
-                        Value::string("2", Span::test_data()),
-                        Value::string("[FF, D8]", Span::test_data()),
-                    ],
-                })),
+                result: Some(Value::test_record(record!(
+                        "description" => Value::test_string("Image"),
+                        "format" => Value::test_string("jpg"),
+                        "magic_offset" => Value::test_string("0"),
+                        "magic_length" => Value::test_string("2"),
+                        "magic_bytes" => Value::test_string("[FF, D8]")))),
             }])]
     }
 
@@ -227,26 +217,26 @@ fn get_magic_details(
         .collect::<Vec<_>>();
 
     Value::record(
-        record! {
-            "description" => Value::string(format, span),
-            "format" => Value::string(data_format, span),
-            "magic_offset" => Value::string(offsets.join(", "), span),
-            "magic_length" => Value::string(lengths.join(", "), span),
-            "magic_bytes" => Value::string(format!("{}", mbytes.join(", ")), span),
-        },
+        record!(
+        "description" => Value::string(format, span),
+        "format" => Value::string(data_format, span),
+        "magic_offset" => Value::string(offsets.join(", "), span),
+        "magic_length" => Value::string(lengths.join(", "), span),
+        "magic_bytes" => Value::string(format!("{}", mbytes.join(", ")), span),
+        ),
         span,
     )
 }
 
 fn get_text_format_details(format: &str, text_format: String, span: Span) -> Value {
     Value::record(
-        record! {
-            "description" => Value::string(format, span),
-            "format" => Value::string(text_format, span),
-            "magic_offset" => Value::nothing(span),
-            "magic_length" => Value::nothing(span),
-            "magic_bytes" => Value::nothing(span),
-        },
+        record!(
+        "description" => Value::string(format, span),
+        "format" => Value::string(text_format, span),
+        "magic_offset" => Value::nothing(span),
+        "magic_length" => Value::nothing(span),
+        "magic_bytes" => Value::nothing(span),
+        ),
         span,
     )
 }
