@@ -1,6 +1,6 @@
 [package]
 name = "nu_plugin_file"
-version = "0.0.2"
+version = "0.1.0"
 authors = ["Darren Schroeder"]
 edition = "2021"
 repository = "https://github.com/fdncred/nu_plugin_file"
