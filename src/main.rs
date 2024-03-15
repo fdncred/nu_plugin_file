@@ -8,23 +8,28 @@ use crate::{extensions::Extension, magic::MagicBytes, magic::MagicBytesMeta};
 use home::home_dir;
 use nu_plugin::{
     serve_plugin, EngineInterface, EvaluatedCall, LabeledError, MsgPackSerializer, Plugin,
+    PluginCommand, SimplePluginCommand,
 };
 use nu_protocol::{
     record, Category, PluginExample, PluginSignature, Span, Spanned, SyntaxShape, Value,
 };
 use std::path::Path;
 
-struct Implementation;
+struct FilePlugin;
 
-impl Implementation {
-    fn new() -> Self {
-        Self {}
+impl Plugin for FilePlugin {
+    fn commands(&self) -> Vec<Box<dyn PluginCommand<Plugin = Self>>> {
+        vec![Box::new(Implementation)]
     }
 }
 
-impl Plugin for Implementation {
-    fn signature(&self) -> Vec<PluginSignature> {
-        vec![PluginSignature::build("file")
+struct Implementation;
+
+impl SimplePluginCommand for Implementation {
+    type Plugin = FilePlugin;
+
+    fn signature(&self) -> PluginSignature {
+        PluginSignature::build("file")
             .usage("View file format information")
             .required(
                 "filename",
@@ -41,17 +46,16 @@ impl Plugin for Implementation {
                         "magic_offset" => Value::test_string("0"),
                         "magic_length" => Value::test_string("2"),
                         "magic_bytes" => Value::test_string("[FF, D8]")))),
-            }])]
+            }])
     }
 
     fn run(
         &self,
-        name: &str,
+        _plugin: &FilePlugin,
         _engine: &EngineInterface,
         call: &EvaluatedCall,
         _input: &Value,
     ) -> Result<Value, LabeledError> {
-        assert_eq!(name, "file");
         let param: Option<Spanned<String>> = call.opt(0)?;
 
         if let Some(filename) = param {
@@ -245,5 +249,5 @@ fn get_text_format_details(format: &str, text_format: String, span: Span) -> Val
 }
 
 fn main() {
-    serve_plugin(&mut Implementation::new(), MsgPackSerializer);
+    serve_plugin(&FilePlugin, MsgPackSerializer);
 }
