@@ -7,11 +7,11 @@ pub mod magic;
 use crate::{extensions::Extension, magic::MagicBytes, magic::MagicBytesMeta};
 use home::home_dir;
 use nu_plugin::{
-    serve_plugin, EngineInterface, EvaluatedCall, LabeledError, MsgPackSerializer, Plugin,
-    PluginCommand, SimplePluginCommand,
+    serve_plugin, EngineInterface, EvaluatedCall, MsgPackSerializer, Plugin, PluginCommand,
+    SimplePluginCommand,
 };
 use nu_protocol::{
-    record, Category, PluginExample, PluginSignature, Span, Spanned, SyntaxShape, Value,
+    record, Category, Example, LabeledError, Signature, Span, Spanned, SyntaxShape, Value,
 };
 use std::path::Path;
 
@@ -28,27 +28,36 @@ struct Implementation;
 impl SimplePluginCommand for Implementation {
     type Plugin = FilePlugin;
 
-    fn signature(&self) -> PluginSignature {
-        PluginSignature::build("file")
-            .usage("View file format information")
+    fn name(&self) -> &str {
+        "file"
+    }
+
+    fn usage(&self) -> &str {
+        "View file format information"
+    }
+
+    fn signature(&self) -> Signature {
+        Signature::build(PluginCommand::name(self))
             .required(
                 "filename",
                 SyntaxShape::String,
                 "full path to file name to inspect",
             )
             .category(Category::Experimental)
-            .plugin_examples(vec![PluginExample {
-                description: "Get format information from file".into(),
-                example: "file some.jpg".into(),
-                result: Some(Value::test_record(record!(
+    }
+
+    fn examples(&self) -> Vec<Example> {
+        vec![Example {
+            description: "Get format information from file".into(),
+            example: "file some.jpg".into(),
+            result: Some(Value::test_record(record!(
                         "description" => Value::test_string("Image"),
                         "format" => Value::test_string("jpg"),
                         "magic_offset" => Value::test_string("0"),
                         "magic_length" => Value::test_string("2"),
                         "magic_bytes" => Value::test_string("[FF, D8]")))),
-            }])
+        }]
     }
-
     fn run(
         &self,
         _plugin: &FilePlugin,
@@ -62,11 +71,8 @@ impl SimplePluginCommand for Implementation {
             let home_dir = match home_dir() {
                 Some(path) => path,
                 None => {
-                    return Err(LabeledError {
-                        label: "Could not find home directory".into(),
-                        msg: "Could not find home directory".into(),
-                        span: Some(call.head),
-                    });
+                    return Err(LabeledError::new("Could not find home directory")
+                        .with_label("Could not find home directory", call.head))
                 }
             };
             let span = filename.span;
