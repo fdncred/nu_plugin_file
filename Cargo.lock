@@ -832,7 +832,7 @@ dependencies = [
 
 [[package]]
 name = "nu-derive-value"
-version = "0.94.3"
+version = "0.95.1"
 dependencies = [
  "convert_case",
  "proc-macro-error",
@@ -843,7 +843,7 @@ dependencies = [
 
 [[package]]
 name = "nu-engine"
-version = "0.94.3"
+version = "0.95.1"
 dependencies = [
  "nu-glob",
  "nu-path",
@@ -853,11 +853,11 @@ dependencies = [
 
 [[package]]
 name = "nu-glob"
-version = "0.94.3"
+version = "0.95.1"
 
 [[package]]
 name = "nu-path"
-version = "0.94.3"
+version = "0.95.1"
 dependencies = [
  "dirs-next",
  "omnipath",
@@ -866,7 +866,7 @@ dependencies = [
 
 [[package]]
 name = "nu-plugin"
-version = "0.94.3"
+version = "0.95.1"
 dependencies = [
  "log",
  "nix",
@@ -879,7 +879,7 @@ dependencies = [
 
 [[package]]
 name = "nu-plugin-core"
-version = "0.94.3"
+version = "0.95.1"
 dependencies = [
  "interprocess",
  "log",
@@ -893,7 +893,7 @@ dependencies = [
 
 [[package]]
 name = "nu-plugin-protocol"
-version = "0.94.3"
+version = "0.95.1"
 dependencies = [
  "bincode",
  "nu-protocol",
@@ -905,7 +905,7 @@ dependencies = [
 
 [[package]]
 name = "nu-protocol"
-version = "0.94.3"
+version = "0.95.1"
 dependencies = [
  "brotli",
  "byte-unit",
@@ -931,7 +931,7 @@ dependencies = [
 
 [[package]]
 name = "nu-system"
-version = "0.94.3"
+version = "0.95.1"
 dependencies = [
  "chrono",
  "itertools 0.12.0",
@@ -949,7 +949,7 @@ dependencies = [
 
 [[package]]
 name = "nu-utils"
-version = "0.94.3"
+version = "0.95.1"
 dependencies = [
  "crossterm_winapi",
  "log",
