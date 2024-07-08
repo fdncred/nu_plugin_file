@@ -52,8 +52,8 @@ impl SimplePluginCommand for Implementation {
 
     fn examples(&self) -> Vec<Example> {
         vec![Example {
-            description: "Get format information from file".into(),
-            example: "file some.jpg".into(),
+            description: "Get format information from file",
+            example: "file some.jpg",
             result: Some(Value::test_record(record!(
                         "description" => Value::test_string("Image"),
                         "format" => Value::test_string("jpg"),
@@ -65,152 +65,168 @@ impl SimplePluginCommand for Implementation {
     fn run(
         &self,
         _plugin: &FilePlugin,
-        _engine: &EngineInterface,
+        engine: &EngineInterface,
         call: &EvaluatedCall,
         _input: &Value,
     ) -> Result<Value, LabeledError> {
         let param: Option<Spanned<String>> = call.opt(0)?;
+        let Some(filename) = param else {
+            return Ok(Value::nothing(call.head));
+        };
+        let span = filename.span;
 
-        if let Some(filename) = param {
-            let home_dir = match home_dir() {
-                Some(path) => path,
-                None => {
-                    return Err(LabeledError::new("Could not find home directory")
-                        .with_label("Could not find home directory", call.head))
+        let home_dir = match home_dir() {
+            Some(path) => path,
+            None => {
+                return Err(LabeledError::new("Cannot find home directory")
+                    .with_label("Cannot find home directory", call.head))
+            }
+        };
+        let Some(home_dir) = home_dir.to_str() else {
+            return Err(LabeledError::new("Cannot convert home directory to valid UTF-8")
+                .with_label("Cannot convert home directory to valid UTF-8", span))
+        };
+
+        let filename = if filename.item.starts_with('~') {
+            filename.item.replace('~', home_dir)
+        } else if filename.item.starts_with('/') {
+            filename.item
+        } else {
+            match engine.get_current_dir() {
+                Ok(dir) => dir.to_string() + "/" + &filename.item,
+                Err(e) => return Err(LabeledError::new(e.to_string())
+                    .with_label(e.to_string(), span))
+            }
+        };
+
+        let canon_path = match Path::new(&filename).canonicalize() {
+            Ok(path) => path,
+            Err(e) => return Err(LabeledError::new(e.to_string())
+                .with_label(e.to_string(), span))
+        };
+        let file_format = extensions::Extension::resolve_conflicting(canon_path, true);
+
+        return match file_format {
+            Some(file_format) => match file_format {
+                Extension::Document(document_format) => {
+                    let magic = document_format.magic_bytes_meta();
+                    return Ok(get_magic_details(
+                        magic,
+                        "Document",
+                        document_format.to_string(),
+                        span,
+                    ));
                 }
-            };
-            let span = filename.span;
-            let filename = if filename.item.starts_with("~") {
-                filename.item.replace("~", home_dir.to_str().unwrap())
-            } else {
-                filename.item
-            };
-            let canon_path = Path::new(&filename).canonicalize().unwrap();
-            let file_format = extensions::Extension::resolve_conflicting(canon_path, true);
-            return match file_format {
-                Some(file_format) => match file_format {
-                    Extension::Document(document_format) => {
-                        let magic = document_format.magic_bytes_meta();
-                        return Ok(get_magic_details(
-                            magic,
-                            "Document",
-                            document_format.to_string(),
-                            span,
-                        ));
-                    }
-                    Extension::Video(video_format) => {
-                        let magic = video_format.magic_bytes_meta();
-                        return Ok(get_magic_details(
-                            magic,
-                            "Video",
-                            video_format.to_string(),
-                            span,
-                        ));
-                    }
-                    Extension::Image(image_format) => {
-                        let magic = image_format.magic_bytes_meta();
-                        return Ok(get_magic_details(
-                            magic,
-                            "Image",
-                            image_format.to_string(),
-                            span,
-                        ));
-                    }
-                    Extension::Audio(audio_format) => {
-                        let magic = audio_format.magic_bytes_meta();
-                        return Ok(get_magic_details(
-                            magic,
-                            "Audio",
-                            audio_format.to_string(),
-                            span,
-                        ));
-                    }
-                    Extension::Archive(archive_format) => {
-                        let magic = archive_format.magic_bytes_meta();
-                        return Ok(get_magic_details(
-                            magic,
-                            "Archive",
-                            archive_format.to_string(),
-                            span,
-                        ));
-                    }
-                    Extension::Executable(executable_format) => {
-                        let magic = executable_format.magic_bytes_meta();
-                        return Ok(get_magic_details(
-                            magic,
-                            "Executable",
-                            executable_format.to_string(),
-                            span,
-                        ));
-                    }
-                    Extension::Text(text_format) => {
-                        return Ok(get_text_format_details(
-                            "Text",
-                            text_format.to_string(),
-                            span,
-                        ));
-                    }
-                    Extension::Encrypted(encrypted_format) => {
-                        let magic = encrypted_format.magic_bytes_meta();
-                        return Ok(get_magic_details(
-                            magic,
-                            "Encrypted",
-                            encrypted_format.to_string(),
-                            span,
-                        ));
-                    }
-                    Extension::Key(key_format) => {
-                        return Ok(get_text_format_details("Key", key_format.to_string(), span));
-                    }
-                    Extension::Font(font_format) => {
-                        let magic = font_format.magic_bytes_meta();
-                        return Ok(get_magic_details(
-                            magic,
-                            "Font",
-                            font_format.to_string(),
-                            span,
-                        ));
-                    }
-                    Extension::Mesh(mesh_format) => {
-                        let magic = mesh_format.magic_bytes_meta();
-                        return Ok(get_magic_details(
-                            magic,
-                            "Mesh",
-                            mesh_format.to_string(),
-                            span,
-                        ));
-                    }
-                    Extension::Code(code_format) => {
-                        return Ok(get_text_format_details(
-                            "Code",
-                            code_format.to_string(),
-                            span,
-                        ));
-                    }
-                    Extension::Database(database_format) => {
-                        let magic = database_format.magic_bytes_meta();
-                        return Ok(get_magic_details(
-                            magic,
-                            "Database",
-                            database_format.to_string(),
-                            span,
-                        ));
-                    }
-                    Extension::Book(book_format) => {
-                        let magic = book_format.magic_bytes_meta();
-                        return Ok(get_magic_details(
-                            magic,
-                            "Book",
-                            book_format.to_string(),
-                            span,
-                        ));
-                    }
-                },
-                None => Ok(Value::nothing(call.head)),
-            };
-        }
-
-        Ok(Value::nothing(call.head))
+                Extension::Video(video_format) => {
+                    let magic = video_format.magic_bytes_meta();
+                    return Ok(get_magic_details(
+                        magic,
+                        "Video",
+                        video_format.to_string(),
+                        span,
+                    ));
+                }
+                Extension::Image(image_format) => {
+                    let magic = image_format.magic_bytes_meta();
+                    return Ok(get_magic_details(
+                        magic,
+                        "Image",
+                        image_format.to_string(),
+                        span,
+                    ));
+                }
+                Extension::Audio(audio_format) => {
+                    let magic = audio_format.magic_bytes_meta();
+                    return Ok(get_magic_details(
+                        magic,
+                        "Audio",
+                        audio_format.to_string(),
+                        span,
+                    ));
+                }
+                Extension::Archive(archive_format) => {
+                    let magic = archive_format.magic_bytes_meta();
+                    return Ok(get_magic_details(
+                        magic,
+                        "Archive",
+                        archive_format.to_string(),
+                        span,
+                    ));
+                }
+                Extension::Executable(executable_format) => {
+                    let magic = executable_format.magic_bytes_meta();
+                    return Ok(get_magic_details(
+                        magic,
+                        "Executable",
+                        executable_format.to_string(),
+                        span,
+                    ));
+                }
+                Extension::Text(text_format) => {
+                    return Ok(get_text_format_details(
+                        "Text",
+                        text_format.to_string(),
+                        span,
+                    ));
+                }
+                Extension::Encrypted(encrypted_format) => {
+                    let magic = encrypted_format.magic_bytes_meta();
+                    return Ok(get_magic_details(
+                        magic,
+                        "Encrypted",
+                        encrypted_format.to_string(),
+                        span,
+                    ));
+                }
+                Extension::Key(key_format) => {
+                    return Ok(get_text_format_details("Key", key_format.to_string(), span));
+                }
+                Extension::Font(font_format) => {
+                    let magic = font_format.magic_bytes_meta();
+                    return Ok(get_magic_details(
+                        magic,
+                        "Font",
+                        font_format.to_string(),
+                        span,
+                    ));
+                }
+                Extension::Mesh(mesh_format) => {
+                    let magic = mesh_format.magic_bytes_meta();
+                    return Ok(get_magic_details(
+                        magic,
+                        "Mesh",
+                        mesh_format.to_string(),
+                        span,
+                    ));
+                }
+                Extension::Code(code_format) => {
+                    return Ok(get_text_format_details(
+                        "Code",
+                        code_format.to_string(),
+                        span,
+                    ));
+                }
+                Extension::Database(database_format) => {
+                    let magic = database_format.magic_bytes_meta();
+                    return Ok(get_magic_details(
+                        magic,
+                        "Database",
+                        database_format.to_string(),
+                        span,
+                    ));
+                }
+                Extension::Book(book_format) => {
+                    let magic = book_format.magic_bytes_meta();
+                    return Ok(get_magic_details(
+                        magic,
+                        "Book",
+                        book_format.to_string(),
+                        span,
+                    ));
+                }
+            },
+            None => Ok(Value::nothing(call.head)),
+        };
     }
 }
 
@@ -239,7 +255,7 @@ fn get_magic_details(
         "format" => Value::string(data_format, span),
         "magic_offset" => Value::string(offsets.join(", "), span),
         "magic_length" => Value::string(lengths.join(", "), span),
-        "magic_bytes" => Value::string(format!("{}", mbytes.join(", ")), span),
+        "magic_bytes" => Value::string(mbytes.join(", "), span),
         ),
         span,
     )

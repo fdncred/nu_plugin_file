@@ -180,13 +180,9 @@ impl Extension {
         path: impl AsRef<Path>,
         always_check_magic_bytes: bool,
     ) -> Option<Extension> {
-        let Some(ext_str) = path.as_ref().extension().and_then(OsStr::to_str) else {
-            return None
-        };
+        let ext_str = path.as_ref().extension().and_then(OsStr::to_str)?;
 
-        let Some(ext) = Extension::from_str(ext_str) else {
-			return None
-		};
+        let ext = Extension::from_str(ext_str)?;
 
         let Ok(ref mut file) = File::open(&path) else {
             return None
