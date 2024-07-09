@@ -13,8 +13,8 @@ license = "AGPL-3.0-only"
 # for local development, you can use a path dependency
 nu-plugin = { path = "../nushell/crates/nu-plugin", version = "0.95.1" }
 nu-protocol = { path = "../nushell/crates/nu-protocol", version = "0.95.1" }
-# nu-plugin = "0.80.0"
-# nu-protocol = "0.80.0"
+# nu-plugin = "0.95.0"
+# nu-protocol = "0.95.0"
 
 serde = { version = "1.0.192", features = ["derive"] }
 serde_json = "1.0.108"
@@ -23,5 +23,3 @@ strum_macros = "0.25.3"
 specta = "1.0.5"
 home = "0.5.5"
 itertools = "0.12.0"
-
-[dev-dependencies]
