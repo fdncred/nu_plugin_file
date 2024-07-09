@@ -106,7 +106,7 @@ impl SimplePluginCommand for Implementation {
         };
         let file_format = extensions::Extension::resolve_conflicting(canon_path, true);
 
-        return match file_format {
+        match file_format {
             Some(file_format) => match file_format {
                 Extension::Document(document_format) => {
                     let magic = document_format.magic_bytes_meta();
@@ -226,7 +226,7 @@ impl SimplePluginCommand for Implementation {
                 }
             },
             None => Ok(Value::nothing(call.head)),
-        };
+        }
     }
 }
 
