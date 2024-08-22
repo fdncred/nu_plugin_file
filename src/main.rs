@@ -36,7 +36,7 @@ impl SimplePluginCommand for Implementation {
         "file"
     }
 
-    fn usage(&self) -> &str {
+    fn description(&self) -> &str {
         "View file format information"
     }
 
@@ -83,8 +83,10 @@ impl SimplePluginCommand for Implementation {
             }
         };
         let Some(home_dir) = home_dir.to_str() else {
-            return Err(LabeledError::new("Cannot convert home directory to valid UTF-8")
-                .with_label("Cannot convert home directory to valid UTF-8", span))
+            return Err(
+                LabeledError::new("Cannot convert home directory to valid UTF-8")
+                    .with_label("Cannot convert home directory to valid UTF-8", span),
+            );
         };
 
         let filename = if filename.item.starts_with('~') {
@@ -94,15 +96,15 @@ impl SimplePluginCommand for Implementation {
         } else {
             match engine.get_current_dir() {
                 Ok(dir) => dir.to_string() + "/" + &filename.item,
-                Err(e) => return Err(LabeledError::new(e.to_string())
-                    .with_label(e.to_string(), span))
+                Err(e) => {
+                    return Err(LabeledError::new(e.to_string()).with_label(e.to_string(), span))
+                }
             }
         };
 
         let canon_path = match Path::new(&filename).canonicalize() {
             Ok(path) => path,
-            Err(e) => return Err(LabeledError::new(e.to_string())
-                .with_label(e.to_string(), span))
+            Err(e) => return Err(LabeledError::new(e.to_string()).with_label(e.to_string(), span)),
         };
         let file_format = extensions::Extension::resolve_conflicting(canon_path, true);
 
