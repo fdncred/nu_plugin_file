@@ -78,22 +78,21 @@ impl SimplePluginCommand for Implementation {
             return Ok(Value::nothing(call.head));
         };
         let span = filename.span;
-
-        let home_dir = match home_dir() {
-            Some(path) => path,
-            None => {
-                return Err(LabeledError::new("Cannot find home directory")
-                    .with_label("Cannot find home directory", call.head))
-            }
-        };
-        let Some(home_dir) = home_dir.to_str() else {
-            return Err(
-                LabeledError::new("Cannot convert home directory to valid UTF-8")
-                    .with_label("Cannot convert home directory to valid UTF-8", span),
-            );
-        };
-
+        
         let filename = if filename.item.starts_with('~') {
+            let home_dir = match home_dir() {
+                Some(path) => path,
+                None => {
+                    return Err(LabeledError::new("Cannot find home directory")
+                        .with_label("Cannot find home directory", call.head))
+                }
+            };
+            let Some(home_dir) = home_dir.to_str() else {
+                return Err(
+                    LabeledError::new("Cannot convert home directory to valid UTF-8")
+                        .with_label("Cannot convert home directory to valid UTF-8", span),
+                );
+            };
             filename.item.replace('~', home_dir)
         } else if (cfg!(target_family = "unix") && filename.item.starts_with('/'))
                   || (cfg!(target_family = "windows") && is_windows_absolute_path(&filename.item)) {
