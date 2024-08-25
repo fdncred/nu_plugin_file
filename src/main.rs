@@ -27,6 +27,10 @@ impl Plugin for FilePlugin {
     }
 }
 
+fn is_windows_absolute_path(path: &str) -> bool {
+    path.starts_with(r"\\") || path.chars().skip_while(|c| c.is_alphabetic()).take(1).eq(":".chars())
+}
+
 struct Implementation;
 
 impl SimplePluginCommand for Implementation {
@@ -91,11 +95,12 @@ impl SimplePluginCommand for Implementation {
 
         let filename = if filename.item.starts_with('~') {
             filename.item.replace('~', home_dir)
-        } else if filename.item.starts_with('/') {
+        } else if (cfg!(target_family = "unix") && filename.item.starts_with('/'))
+                  || (cfg!(target_family = "windows") && is_windows_absolute_path(&filename.item)) {
             filename.item
         } else {
             match engine.get_current_dir() {
-                Ok(dir) => dir.to_string() + "/" + &filename.item,
+                Ok(dir) => dir.to_string() + std::path::MAIN_SEPARATOR_STR + &filename.item,
                 Err(e) => {
                     return Err(LabeledError::new(e.to_string()).with_label(e.to_string(), span))
                 }
