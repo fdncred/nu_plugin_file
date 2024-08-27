@@ -7,6 +7,7 @@ pub mod magic;
 pub mod executable;
 
 use crate::{extensions::Extension, magic::MagicBytes, magic::MagicBytesMeta};
+use executable::BinaryArch;
 use home::home_dir;
 use nu_plugin::{
     serve_plugin, EngineInterface, EvaluatedCall, MsgPackSerializer, Plugin, PluginCommand,
@@ -113,12 +114,6 @@ impl SimplePluginCommand for Implementation {
             Err(e) => return Err(LabeledError::new(e.to_string()).with_label(e.to_string(), span)),
         };
         let file_format = extensions::Extension::resolve_conflicting(canon_path.clone(), true);
-        
-        let info = match crate::executable::Binary::parse(canon_path) {
-            Ok(info) => info,
-            Err(e) => return Err(LabeledError::new(e.to_string()).with_label(e.to_string(), span)),
-        };
-        return Ok(info.into_value(span));
 
         match file_format {
             Some(file_format) => match file_format {
@@ -168,13 +163,8 @@ impl SimplePluginCommand for Implementation {
                     ));
                 }
                 Extension::Executable(executable_format) => {
-                    let magic = executable_format.magic_bytes_meta();
-                    return Ok(get_magic_details(
-                        magic,
-                        "Executable",
-                        executable_format.to_string(),
-                        span,
-                    ));
+                    let bin = crate::executable::Binary::parse(canon_path).map_err(|e| LabeledError::new(e.to_string()).with_label(e.to_string(), span))?;
+                    return Ok(get_executable_format_details(bin, span));
                 }
                 Extension::Text(text_format) => {
                     return Ok(get_text_format_details(
@@ -239,11 +229,41 @@ impl SimplePluginCommand for Implementation {
                     ));
                 }
             },
-            None => Ok(Value::nothing(call.head)),
+            None => {
+                if executable::Binary::has_magic_bytes(&canon_path) {
+                    let bin = crate::executable::Binary::parse(canon_path).map_err(|e| LabeledError::new(e.to_string()).with_label(e.to_string(), span))?;
+                    return Ok(get_executable_format_details(bin, span));
+                }
+                Ok(Value::nothing(call.head))
+            },
         }
     }
 }
+fn get_executable_format_details(bin: executable::Binary, span: Span) -> Value {
+    let magics = bin.arches
+        .iter()
+        .map(|BinaryArch{magic_bytes, ..}| {
+            Value::record(
+                record!(
+                    "offset" => Value::int(magic_bytes.offset as _, span),
+                    "length" => Value::int(magic_bytes.length as _, span),
+                    "bytes" => Value::binary(&magic_bytes.bytes[..], span),
+                ),
+                span,
+            )
+        })
+        .collect();
+    Value::record(
+        record!(
+        "description" => Value::string(bin.description(), span),
+        "format" => Value::string("Executable", span),
+        "magics" => Value::list(magics, span),
+        "details" => bin.into_value(span),
+        ),
+        span,
+    )
 
+}
 fn get_magic_details(
     magic: Vec<MagicBytesMeta>,
     format: &str,
