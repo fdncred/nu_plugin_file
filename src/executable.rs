@@ -10,7 +10,7 @@ pub struct Binary {
 }
 pub struct BinaryArch {
     pub format: &'static str,
-    pub arch: &'static str,
+    pub arch: String,
     pub dependencies: Vec<String>,
 }
 
@@ -40,7 +40,7 @@ impl BinaryArch {
     pub fn into_value(&self, span: Span) -> Value {
         Value::record(
             record!(
-                "arch" => Value::string(self.arch, span),
+                "arch" => Value::string(&self.arch, span),
                 "format" => Value::string(self.format, span),
                 "dependencies" => Value::list(
                     self
@@ -65,7 +65,7 @@ impl Binary {
                     arches: vec![
                         BinaryArch {
                             format: "mach-o",
-                            arch: goblin::mach::cputype::get_arch_name_from_types(prg.header.cputype, prg.header.cpusubtype).unwrap_or_default(),
+                            arch: goblin::mach::cputype::get_arch_name_from_types(prg.header.cputype, prg.header.cpusubtype).map_or(String::new(), |x| x.to_lowercase()),
                             dependencies: prg.libs.iter().map(|x| x.to_string()).skip(1).collect(),
                         }
                     ]
@@ -77,7 +77,7 @@ impl Binary {
                         match arches.get(index).map_err(|e| e.to_string())? {
                             SingleArch::MachO(prg) => Ok(BinaryArch {
                                 format: "mach-o",
-                                arch: goblin::mach::cputype::get_arch_name_from_types(prg.header.cputype, prg.header.cpusubtype).unwrap_or_default(),
+                                arch: goblin::mach::cputype::get_arch_name_from_types(prg.header.cputype, prg.header.cpusubtype).map_or(String::new(), |x| x.to_lowercase()),
                                 dependencies: prg.libs.iter().map(|x| x.to_string()).skip(1).collect(),
                             }),
                             SingleArch::Archive(_) => todo!(),
