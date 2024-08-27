@@ -13,29 +13,6 @@ pub struct BinaryArch {
     pub arch: String,
     pub dependencies: Vec<String>,
 }
-
-impl Binary {
-    pub fn into_value(&self, span: Span) -> Value {
-        match self.arches.len() {
-            0 => Value::nothing(span),
-            1 => self.arches[0].into_value(span),
-            _ => Value::record(
-                record!(
-                    "arches" => Value::list(
-                        self
-                            .arches
-                            .iter()
-                            .map(|x| x.into_value(span))
-                            .collect(),
-                        span
-                    )
-                ), 
-                span
-            )
-        }
-    }
-}
-
 impl BinaryArch {
     pub fn into_value(&self, span: Span) -> Value {
         Value::record(
@@ -56,6 +33,25 @@ impl BinaryArch {
     }
 }
 impl Binary {
+    pub fn into_value(&self, span: Span) -> Value {
+        match self.arches.len() {
+            0 => Value::nothing(span),
+            1 => self.arches[0].into_value(span),
+            _ => Value::record(
+                record!(
+                    "arches" => Value::list(
+                        self
+                            .arches
+                            .iter()
+                            .map(|x| x.into_value(span))
+                            .collect(),
+                        span
+                    )
+                ), 
+                span
+            )
+        }
+    }
     pub fn parse(path: impl AsRef<Path>) -> Result<Self, String> {
         let buffer = std::fs::read(path).map_err(|e| e.to_string())?;
         let object = Object::parse(&buffer).map_err(|e| e.to_string())?;
