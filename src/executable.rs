@@ -85,6 +85,28 @@ impl Binary {
                     }).collect::<Result<Vec<_>, String>>()?
                 })
             }
+            Object::PE(prg) => {
+                Ok(Binary{
+                    arches: vec![
+                        BinaryArch {
+                            format:  if prg.is_64 {"pe32+"} else {"pe32"},
+                            arch: goblin::pe::header::machine_to_str(prg.header.coff_header.machine).to_lowercase(),
+                            dependencies: prg.libraries.iter().map(|x| x.to_string()).collect(),
+                        }
+                    ]
+                })
+            }
+            Object::Elf(prg) => {
+                Ok(Binary{
+                    arches: vec![
+                        BinaryArch {
+                            format:  if prg.is_64 {"elf64"} else {"elf32"},
+                            arch: goblin::elf::header::machine_to_str(prg.header.e_machine).to_lowercase(),
+                            dependencies: prg.libraries.iter().map(|x| x.to_string()).collect(),
+                        }
+                    ]
+                })
+            },
             _ => todo!(),
         }
     }
