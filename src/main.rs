@@ -112,7 +112,13 @@ impl SimplePluginCommand for Implementation {
             Ok(path) => path,
             Err(e) => return Err(LabeledError::new(e.to_string()).with_label(e.to_string(), span)),
         };
-        let file_format = extensions::Extension::resolve_conflicting(canon_path, true);
+        let file_format = extensions::Extension::resolve_conflicting(canon_path.clone(), true);
+        
+        let info = match crate::executable::Binary::parse(canon_path) {
+            Ok(info) => info,
+            Err(e) => return Err(LabeledError::new(e.to_string()).with_label(e.to_string(), span)),
+        };
+        return Ok(info.into_value(span));
 
         match file_format {
             Some(file_format) => match file_format {
