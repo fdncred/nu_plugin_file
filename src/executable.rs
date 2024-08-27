@@ -107,7 +107,7 @@ impl Binary {
                     ]
                 })
             },
-            _ => todo!(),
+            _ => Err("Unsupported file format".to_string()),
         }
     }
 }
