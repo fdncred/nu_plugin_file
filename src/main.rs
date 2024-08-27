@@ -3,6 +3,8 @@
 pub mod extensions;
 pub mod kind;
 pub mod magic;
+#[cfg(feature = "executables")]
+pub mod executable;
 
 use crate::{extensions::Extension, magic::MagicBytes, magic::MagicBytesMeta};
 use home::home_dir;
