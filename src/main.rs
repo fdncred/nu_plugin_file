@@ -250,26 +250,24 @@ fn get_magic_details(
     data_format: String,
     span: Span,
 ) -> Value {
-    let offsets = magic
-        .iter()
-        .map(|b| b.offset.to_string())
-        .collect::<Vec<_>>();
-    let lengths = magic
-        .iter()
-        .map(|b| b.length.to_string())
-        .collect::<Vec<_>>();
-    let mbytes = magic
-        .iter()
-        .map(|b| format!("{:X?}", b.bytes.clone()))
-        .collect::<Vec<_>>();
-
+    let magics = magic
+        .into_iter()
+        .map(|b| {
+            Value::record(
+                record!(
+                    "offset" => Value::int(b.offset as _, span),
+                    "length" => Value::int(b.length as _, span),
+                    "bytes" => Value::binary(b.bytes, span),
+                ),
+                span,
+            )
+        })
+        .collect();
     Value::record(
         record!(
         "description" => Value::string(format, span),
         "format" => Value::string(data_format, span),
-        "magic_offset" => Value::string(offsets.join(", "), span),
-        "magic_length" => Value::string(lengths.join(", "), span),
-        "magic_bytes" => Value::string(mbytes.join(", "), span),
+        "magics" => Value::list(magics, span)
         ),
         span,
     )
@@ -280,9 +278,7 @@ fn get_text_format_details(format: &str, text_format: String, span: Span) -> Val
         record!(
         "description" => Value::string(format, span),
         "format" => Value::string(text_format, span),
-        "magic_offset" => Value::nothing(span),
-        "magic_length" => Value::nothing(span),
-        "magic_bytes" => Value::nothing(span),
+        "magics" => Value::nothing(span),
         ),
         span,
     )
