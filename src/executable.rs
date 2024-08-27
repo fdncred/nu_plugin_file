@@ -1,6 +1,6 @@
 use std::path::Path;
 use goblin::{
-    mach::{cputype, Mach, SingleArch}, 
+    mach::{Mach, SingleArch}, 
     Object
 };
 use nu_protocol::{record, Span, Value};
@@ -65,7 +65,7 @@ impl Binary {
                     arches: vec![
                         BinaryArch {
                             format: "mach-o",
-                            arch: Self::mach_get_arch(prg.header.cputype),
+                            arch: goblin::mach::cputype::get_arch_name_from_types(prg.header.cputype, prg.header.cpusubtype).unwrap_or_default(),
                             dependencies: prg.libs.iter().map(|x| x.to_string()).skip(1).collect(),
                         }
                     ]
@@ -77,7 +77,7 @@ impl Binary {
                         match arches.get(index).map_err(|e| e.to_string())? {
                             SingleArch::MachO(prg) => Ok(BinaryArch {
                                 format: "mach-o",
-                                arch: Self::mach_get_arch(prg.header.cputype),
+                                arch: goblin::mach::cputype::get_arch_name_from_types(prg.header.cputype, prg.header.cpusubtype).unwrap_or_default(),
                                 dependencies: prg.libs.iter().map(|x| x.to_string()).skip(1).collect(),
                             }),
                             SingleArch::Archive(_) => todo!(),
@@ -86,29 +86,6 @@ impl Binary {
                 })
             }
             _ => todo!(),
-        }
-    }
-    fn mach_get_arch(cpu_type: u32) -> &'static str {
-        match cpu_type {
-            cputype::CPU_TYPE_ANY => "any",
-            cputype::CPU_TYPE_VAX => "vax",
-            cputype::CPU_TYPE_MC680X0 => "mc680x0",
-            cputype::CPU_TYPE_X86 => "x86",
-            // cputype::CPU_TYPE_I386 => "i386",
-            cputype::CPU_TYPE_X86_64 => "x86_64",
-            cputype::CPU_TYPE_MIPS => "mips",
-            cputype::CPU_TYPE_MC98000 => "mc98000",
-            cputype::CPU_TYPE_HPPA => "hppa",
-            cputype::CPU_TYPE_ARM => "arm",
-            cputype::CPU_TYPE_ARM64 => "arm64",
-            cputype::CPU_TYPE_ARM64_32 => "arm64_32",
-            cputype::CPU_TYPE_MC88000 => "mc88000",
-            cputype::CPU_TYPE_SPARC => "sparc",
-            cputype::CPU_TYPE_I860 => "i860",
-            cputype::CPU_TYPE_ALPHA => "alpha",
-            cputype::CPU_TYPE_POWERPC => "powerpc",
-            cputype::CPU_TYPE_POWERPC64 => "powerpc64",
-            _ => "unknown",
         }
     }
 }
