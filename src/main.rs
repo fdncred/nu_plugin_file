@@ -258,9 +258,10 @@ impl SimplePluginCommand for Implementation {
 }
 #[cfg(feature = "executables")]
 fn get_executable_format_details(bin: executable::Binary, span: Span) -> Value {
-    let magics = bin.arches
-        .iter()
-        .map(|BinaryArch{magic_bytes, ..}| {
+    let magics = std::iter::once(bin.magic_bytes.as_ref())
+        .flatten()
+        .chain(bin.arches.iter().map(|BinaryArch{magic_bytes, ..}| magic_bytes))
+        .map(|magic_bytes| {
             Value::record(
                 record!(
                     "offset" => Value::int(magic_bytes.offset as _, span),

@@ -8,6 +8,7 @@ use crate::magic::MagicBytesMeta;
 
 pub struct Binary {
     pub arches: Vec<BinaryArch>,
+    pub magic_bytes: Option<MagicBytesMeta>,
 }
 pub struct BinaryArch {
     pub magic_bytes: MagicBytesMeta,
@@ -72,19 +73,22 @@ impl Binary {
                             arch: goblin::mach::cputype::get_arch_name_from_types(prg.header.cputype, prg.header.cpusubtype).map_or(String::new(), |x| x.to_lowercase()),
                             dependencies: prg.libs.iter().map(|x| x.to_string()).skip(1).collect(),
                         }
-                    ]
+                    ],
+                    magic_bytes: None
                 })
             }
             Object::Mach(Mach::Fat(arches)) => {
+                let magic_bytes = buffer[0..4].to_vec();
                 Ok(Binary{
-                    arches: std::iter::repeat(()).take(arches.narches).enumerate().map(|(index, _)| {
+                    arches: arches.iter_arches().enumerate().map(|(index, arch)| {
+                        let arch = arch.map_err(|e| e.to_string())?;
                         let prg = arches.get(index).map_err(|e| e.to_string())?;
                         match prg {
                             SingleArch::MachO(prg) => {
                                 let magic_bytes = prg.header.magic.to_le_bytes().to_vec();
                                 Ok(BinaryArch {
                                     magic_bytes: MagicBytesMeta{
-                                        offset: 0, // TODO: set correct offset
+                                        offset: arch.offset as _, // TODO: set correct offset
                                         length: magic_bytes.len(),
                                         bytes: magic_bytes
                                     },
@@ -95,7 +99,12 @@ impl Binary {
                             },
                             SingleArch::Archive(_) => todo!(),
                         }
-                    }).collect::<Result<Vec<_>, String>>()?
+                    }).collect::<Result<Vec<_>, String>>()?,
+                    magic_bytes: Some(MagicBytesMeta{
+                        offset: 0,
+                        length: magic_bytes.len(),
+                        bytes: magic_bytes
+                    })
                 })
             }
             Object::PE(prg) => {
@@ -112,7 +121,8 @@ impl Binary {
                             arch: goblin::pe::header::machine_to_str(prg.header.coff_header.machine).to_lowercase(),
                             dependencies: prg.libraries.iter().map(|x| x.to_string()).collect(),
                         }
-                    ]
+                    ],
+                    magic_bytes: None
                 })
             }
             Object::Elf(prg) => {
@@ -129,7 +139,8 @@ impl Binary {
                             arch: goblin::elf::header::machine_to_str(prg.header.e_machine).to_lowercase(),
                             dependencies: prg.libraries.iter().map(|x| x.to_string()).collect(),
                         }
-                    ]
+                    ],
+                    magic_bytes: None
                 })
 
             },
