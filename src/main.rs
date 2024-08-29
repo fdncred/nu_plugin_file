@@ -113,7 +113,7 @@ impl SimplePluginCommand for Implementation {
             Ok(path) => path,
             Err(e) => return Err(LabeledError::new(e.to_string()).with_label(e.to_string(), span)),
         };
-        let file_format = extensions::Extension::resolve_conflicting(canon_path.clone(), true);
+        let file_format = extensions::Extension::resolve_conflicting(&canon_path, true);
 
         match file_format {
             Some(file_format) => match file_format {
@@ -163,7 +163,7 @@ impl SimplePluginCommand for Implementation {
                     ));
                 }
                 Extension::Executable(executable_format) => {
-                    let bin = crate::executable::Binary::parse(canon_path).map_err(|e| LabeledError::new(e.to_string()).with_label(e.to_string(), span))?;
+                    let bin = crate::executable::Binary::parse(&canon_path).map_err(|e| LabeledError::new(e.to_string()).with_label(e.to_string(), span))?;
                     return Ok(get_executable_format_details(bin, span));
                 }
                 Extension::Text(text_format) => {
@@ -231,7 +231,7 @@ impl SimplePluginCommand for Implementation {
             },
             None => {
                 if executable::Binary::has_magic_bytes(&canon_path) {
-                    let bin = crate::executable::Binary::parse(canon_path).map_err(|e| LabeledError::new(e.to_string()).with_label(e.to_string(), span))?;
+                    let bin = crate::executable::Binary::parse(&canon_path).map_err(|e| LabeledError::new(e.to_string()).with_label(e.to_string(), span))?;
                     return Ok(get_executable_format_details(bin, span));
                 }
                 Ok(Value::nothing(call.head))
