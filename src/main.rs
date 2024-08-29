@@ -5,9 +5,11 @@ pub mod kind;
 pub mod magic;
 #[cfg(feature = "executables")]
 pub mod executable;
+#[cfg(feature = "executables")]
+use executable::BinaryArch;
 
 use crate::{extensions::Extension, magic::MagicBytes, magic::MagicBytesMeta};
-use executable::BinaryArch;
+
 use home::home_dir;
 use nu_plugin::{
     serve_plugin, EngineInterface, EvaluatedCall, MsgPackSerializer, Plugin, PluginCommand,
@@ -163,8 +165,22 @@ impl SimplePluginCommand for Implementation {
                     ));
                 }
                 Extension::Executable(executable_format) => {
-                    let bin = crate::executable::Binary::parse(&canon_path).map_err(|e| LabeledError::new(e.to_string()).with_label(e.to_string(), span))?;
-                    return Ok(get_executable_format_details(bin, span));
+                    #[cfg(feature = "executables")]
+                    {
+                        let bin = crate::executable::Binary::parse(&canon_path).map_err(|e| LabeledError::new(e.to_string()).with_label(e.to_string(), span))?;
+                        return Ok(get_executable_format_details(bin, span));
+                    }
+
+                    #[cfg(not(feature = "executables"))]
+                    {
+                        let magic = executable_format.magic_bytes_meta();
+                        return Ok(get_magic_details(
+                            magic,
+                            "Encrypted",
+                            executable_format.to_string(),
+                            span,
+                        ));
+                    }
                 }
                 Extension::Text(text_format) => {
                     return Ok(get_text_format_details(
@@ -230,6 +246,7 @@ impl SimplePluginCommand for Implementation {
                 }
             },
             None => {
+                #[cfg(feature = "executables")]
                 if executable::Binary::has_magic_bytes(&canon_path) {
                     let bin = crate::executable::Binary::parse(&canon_path).map_err(|e| LabeledError::new(e.to_string()).with_label(e.to_string(), span))?;
                     return Ok(get_executable_format_details(bin, span));
@@ -239,6 +256,7 @@ impl SimplePluginCommand for Implementation {
         }
     }
 }
+#[cfg(feature = "executables")]
 fn get_executable_format_details(bin: executable::Binary, span: Span) -> Value {
     let magics = bin.arches
         .iter()
