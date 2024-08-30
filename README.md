@@ -57,5 +57,6 @@ Examples:
 ## Installation
 1. clone repo `git clone https://github.com/fdncred/nu_plugin_file.git`
 2. install with cargo `cargo install --path .`
-3. register with nushell `register /path/to/nu_plugin_file`
-4. inspect a file `file some.jpg`
+3. register plugin with nushell `plugin add /path/to/nu_plugin_file`
+4. bring plugin into scope `plugin use /path/to/nu_plugin_file`
+5. inspect a file `file some.jpg`
