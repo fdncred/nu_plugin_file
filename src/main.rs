@@ -164,23 +164,20 @@ impl SimplePluginCommand for Implementation {
                         span,
                     ));
                 }
+                #[cfg(feature = "executables")]
+                Extension::Executable(_) => {
+                    let bin = crate::executable::Binary::parse(&canon_path).map_err(|e| LabeledError::new(e.to_string()).with_label(e.to_string(), span))?;
+                    return Ok(get_executable_format_details(bin, span));
+                }
+                #[cfg(not(feature = "executables"))]
                 Extension::Executable(executable_format) => {
-                    #[cfg(feature = "executables")]
-                    {
-                        let bin = crate::executable::Binary::parse(&canon_path).map_err(|e| LabeledError::new(e.to_string()).with_label(e.to_string(), span))?;
-                        return Ok(get_executable_format_details(bin, span));
-                    }
-
-                    #[cfg(not(feature = "executables"))]
-                    {
-                        let magic = executable_format.magic_bytes_meta();
-                        return Ok(get_magic_details(
-                            magic,
-                            "Encrypted",
-                            executable_format.to_string(),
-                            span,
-                        ));
-                    }
+                    let magic = executable_format.magic_bytes_meta();
+                    return Ok(get_magic_details(
+                        magic,
+                        "Encrypted",
+                        executable_format.to_string(),
+                        span,
+                    ));
                 }
                 Extension::Text(text_format) => {
                     return Ok(get_text_format_details(
