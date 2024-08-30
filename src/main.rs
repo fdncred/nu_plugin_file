@@ -3,8 +3,13 @@
 pub mod extensions;
 pub mod kind;
 pub mod magic;
+#[cfg(feature = "executables")]
+pub mod executable;
+#[cfg(feature = "executables")]
+use executable::BinaryArch;
 
 use crate::{extensions::Extension, magic::MagicBytes, magic::MagicBytesMeta};
+
 use home::home_dir;
 use nu_plugin::{
     serve_plugin, EngineInterface, EvaluatedCall, MsgPackSerializer, Plugin, PluginCommand,
@@ -25,6 +30,10 @@ impl Plugin for FilePlugin {
     fn commands(&self) -> Vec<Box<dyn PluginCommand<Plugin = Self>>> {
         vec![Box::new(Implementation)]
     }
+}
+
+fn is_windows_absolute_path(path: &str) -> bool {
+    path.starts_with(r"\\") || path.chars().skip_while(|c| c.is_alphabetic()).take(1).eq(":".chars())
 }
 
 struct Implementation;
@@ -74,28 +83,28 @@ impl SimplePluginCommand for Implementation {
             return Ok(Value::nothing(call.head));
         };
         let span = filename.span;
-
-        let home_dir = match home_dir() {
-            Some(path) => path,
-            None => {
-                return Err(LabeledError::new("Cannot find home directory")
-                    .with_label("Cannot find home directory", call.head))
-            }
-        };
-        let Some(home_dir) = home_dir.to_str() else {
-            return Err(
-                LabeledError::new("Cannot convert home directory to valid UTF-8")
-                    .with_label("Cannot convert home directory to valid UTF-8", span),
-            );
-        };
-
+        
         let filename = if filename.item.starts_with('~') {
+            let home_dir = match home_dir() {
+                Some(path) => path,
+                None => {
+                    return Err(LabeledError::new("Cannot find home directory")
+                        .with_label("Cannot find home directory", call.head))
+                }
+            };
+            let Some(home_dir) = home_dir.to_str() else {
+                return Err(
+                    LabeledError::new("Cannot convert home directory to valid UTF-8")
+                        .with_label("Cannot convert home directory to valid UTF-8", span),
+                );
+            };
             filename.item.replace('~', home_dir)
-        } else if filename.item.starts_with('/') {
+        } else if (cfg!(target_family = "unix") && filename.item.starts_with('/'))
+                  || (cfg!(target_family = "windows") && is_windows_absolute_path(&filename.item)) {
             filename.item
         } else {
             match engine.get_current_dir() {
-                Ok(dir) => dir.to_string() + "/" + &filename.item,
+                Ok(dir) => dir.to_string() + std::path::MAIN_SEPARATOR_STR + &filename.item,
                 Err(e) => {
                     return Err(LabeledError::new(e.to_string()).with_label(e.to_string(), span))
                 }
@@ -106,7 +115,7 @@ impl SimplePluginCommand for Implementation {
             Ok(path) => path,
             Err(e) => return Err(LabeledError::new(e.to_string()).with_label(e.to_string(), span)),
         };
-        let file_format = extensions::Extension::resolve_conflicting(canon_path, true);
+        let file_format = extensions::Extension::resolve_conflicting(&canon_path, true);
 
         match file_format {
             Some(file_format) => match file_format {
@@ -155,11 +164,17 @@ impl SimplePluginCommand for Implementation {
                         span,
                     ));
                 }
+                #[cfg(feature = "executables")]
+                Extension::Executable(_) => {
+                    let bin = crate::executable::Binary::parse(&canon_path).map_err(|e| LabeledError::new(e.to_string()).with_label(e.to_string(), span))?;
+                    return Ok(get_executable_format_details(bin, span));
+                }
+                #[cfg(not(feature = "executables"))]
                 Extension::Executable(executable_format) => {
                     let magic = executable_format.magic_bytes_meta();
                     return Ok(get_magic_details(
                         magic,
-                        "Executable",
+                        "Encrypted",
                         executable_format.to_string(),
                         span,
                     ));
@@ -227,37 +242,68 @@ impl SimplePluginCommand for Implementation {
                     ));
                 }
             },
-            None => Ok(Value::nothing(call.head)),
+            None => {
+                #[cfg(feature = "executables")]
+                if executable::Binary::has_magic_bytes(&canon_path) {
+                    let bin = crate::executable::Binary::parse(&canon_path).map_err(|e| LabeledError::new(e.to_string()).with_label(e.to_string(), span))?;
+                    return Ok(get_executable_format_details(bin, span));
+                }
+                Ok(Value::nothing(call.head))
+            },
         }
     }
 }
+#[cfg(feature = "executables")]
+fn get_executable_format_details(bin: executable::Binary, span: Span) -> Value {
+    let magics = std::iter::once(bin.magic_bytes.as_ref())
+        .flatten()
+        .chain(bin.arches.iter().map(|BinaryArch{magic_bytes, ..}| magic_bytes))
+        .map(|magic_bytes| {
+            Value::record(
+                record!(
+                    "offset" => Value::int(magic_bytes.offset as _, span),
+                    "length" => Value::int(magic_bytes.length as _, span),
+                    "bytes" => Value::binary(&magic_bytes.bytes[..], span),
+                ),
+                span,
+            )
+        })
+        .collect();
+    Value::record(
+        record!(
+        "description" => Value::string(bin.description(), span),
+        "format" => Value::string("Executable", span),
+        "magics" => Value::list(magics, span),
+        "details" => bin.into_value(span),
+        ),
+        span,
+    )
 
+}
 fn get_magic_details(
     magic: Vec<MagicBytesMeta>,
     format: &str,
     data_format: String,
     span: Span,
 ) -> Value {
-    let offsets = magic
-        .iter()
-        .map(|b| b.offset.to_string())
-        .collect::<Vec<_>>();
-    let lengths = magic
-        .iter()
-        .map(|b| b.length.to_string())
-        .collect::<Vec<_>>();
-    let mbytes = magic
-        .iter()
-        .map(|b| format!("{:X?}", b.bytes.clone()))
-        .collect::<Vec<_>>();
-
+    let magics = magic
+        .into_iter()
+        .map(|b| {
+            Value::record(
+                record!(
+                    "offset" => Value::int(b.offset as _, span),
+                    "length" => Value::int(b.length as _, span),
+                    "bytes" => Value::binary(b.bytes, span),
+                ),
+                span,
+            )
+        })
+        .collect();
     Value::record(
         record!(
         "description" => Value::string(format, span),
         "format" => Value::string(data_format, span),
-        "magic_offset" => Value::string(offsets.join(", "), span),
-        "magic_length" => Value::string(lengths.join(", "), span),
-        "magic_bytes" => Value::string(mbytes.join(", "), span),
+        "magics" => Value::list(magics, span)
         ),
         span,
     )
@@ -268,9 +314,7 @@ fn get_text_format_details(format: &str, text_format: String, span: Span) -> Val
         record!(
         "description" => Value::string(format, span),
         "format" => Value::string(text_format, span),
-        "magic_offset" => Value::nothing(span),
-        "magic_length" => Value::nothing(span),
-        "magic_bytes" => Value::nothing(span),
+        "magics" => Value::nothing(span),
         ),
         span,
     )

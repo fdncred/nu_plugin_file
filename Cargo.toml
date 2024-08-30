@@ -23,3 +23,9 @@ strum_macros = "0.26.4"
 specta = "1.0.5"
 home = "0.5.9"
 itertools = "0.13.0"
+
+goblin = { version = "0.8.2", optional = true }
+
+[features]
+default = ["executables"]
+executables = ["goblin"]
