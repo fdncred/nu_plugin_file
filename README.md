@@ -28,6 +28,31 @@ Examples:
   │ magic_bytes  │ [FF, D8] │
   ╰──────────────┴──────────╯
 ```
+## Example with binary
+```nushell
+❯ file ~/.cargo/bin/nu | table -e 
+╭─────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ description │ mach-o binary, arm64                                                                                     │
+│ format      │ Executable                                                                                               │
+│             │ ╭─#─┬─offset─┬─length─┬────────bytes─────────╮                                                           │
+│ magics      │ │ 0 │      0 │      4 │ [207, 250, 237, 254] │                                                           │
+│             │ ╰───┴────────┴────────┴──────────────────────╯                                                           │
+│             │ ╭──────────────┬───────────────────────────────────────────────────────────────────────────────────────╮ │
+│ details     │ │ arch         │ arm64                                                                                 │ │
+│             │ │ format       │ mach-o                                                                                │ │
+│             │ │              │ ╭───┬───────────────────────────────────────────────────────────────────────────────╮ │ │
+│             │ │ dependencies │ │ 0 │ /System/Library/Frameworks/Foundation.framework/Versions/C/Foundation         │ │ │
+│             │ │              │ │ 1 │ /usr/lib/libobjc.A.dylib                                                      │ │ │
+│             │ │              │ │ 2 │ /System/Library/Frameworks/Security.framework/Versions/A/Security             │ │ │
+│             │ │              │ │ 3 │ /System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation │ │ │
+│             │ │              │ │ 4 │ /System/Library/Frameworks/CoreServices.framework/Versions/A/CoreServices     │ │ │
+│             │ │              │ │ 5 │ /System/Library/Frameworks/IOKit.framework/Versions/A/IOKit                   │ │ │
+│             │ │              │ │ 6 │ /usr/lib/libiconv.2.dylib                                                     │ │ │
+│             │ │              │ │ 7 │ /usr/lib/libSystem.B.dylib                                                    │ │ │
+│             │ │              │ ╰───┴───────────────────────────────────────────────────────────────────────────────╯ │ │
+│             │ ╰──────────────┴───────────────────────────────────────────────────────────────────────────────────────╯ │
+╰─────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+```
 
 ## Installation
 1. clone repo `git clone https://github.com/fdncred/nu_plugin_file.git`
