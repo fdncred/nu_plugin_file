@@ -88,7 +88,7 @@ impl Binary {
                                 let magic_bytes = prg.header.magic.to_le_bytes().to_vec();
                                 Ok(BinaryArch {
                                     magic_bytes: MagicBytesMeta{
-                                        offset: arch.offset as _, // TODO: set correct offset
+                                        offset: arch.offset as _,
                                         length: magic_bytes.len(),
                                         bytes: magic_bytes
                                     },
@@ -108,21 +108,26 @@ impl Binary {
                 })
             }
             Object::PE(prg) => {
-                let magic_bytes = prg.header.dos_header.signature.to_le_bytes().to_vec();
+                let dos_magic_bytes = prg.header.dos_header.signature.to_le_bytes().to_vec();
+                let pe_magic_bytes = prg.header.signature.to_le_bytes().to_vec();
                 Ok(Binary{
                     arches: vec![
                         BinaryArch {
                             magic_bytes: MagicBytesMeta{
-                                offset: 0,
-                                length: magic_bytes.len(),
-                                bytes: magic_bytes
+                                offset: prg.header.dos_header.pe_pointer as _,
+                                length: pe_magic_bytes.len(),
+                                bytes: pe_magic_bytes
                             },
-                            format:  if prg.is_64 {"pe32+"} else {"pe32"},
+                            format: if prg.is_64 {"pe32+"} else {"pe32"},
                             arch: goblin::pe::header::machine_to_str(prg.header.coff_header.machine).to_lowercase(),
                             dependencies: prg.libraries.iter().map(|x| x.to_string()).collect(),
                         }
                     ],
-                    magic_bytes: None
+                    magic_bytes: Some(MagicBytesMeta{
+                        offset: 0,
+                        length: dos_magic_bytes.len(),
+                        bytes: dos_magic_bytes
+                    }),
                 })
             }
             Object::Elf(prg) => {
