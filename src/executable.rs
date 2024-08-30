@@ -80,25 +80,27 @@ impl Binary {
             Object::Mach(Mach::Fat(arches)) => {
                 let magic_bytes = buffer[0..4].to_vec();
                 Ok(Binary{
-                    arches: arches.iter_arches().enumerate().map(|(index, arch)| {
-                        let arch = arch.map_err(|e| e.to_string())?;
-                        let prg = arches.get(index).map_err(|e| e.to_string())?;
-                        match prg {
-                            SingleArch::MachO(prg) => {
-                                let magic_bytes = prg.header.magic.to_le_bytes().to_vec();
-                                Ok(BinaryArch {
-                                    magic_bytes: MagicBytesMeta{
-                                        offset: arch.offset as _,
-                                        length: magic_bytes.len(),
-                                        bytes: magic_bytes
-                                    },
-                                    format: "mach-o",
-                                    arch: goblin::mach::cputype::get_arch_name_from_types(prg.header.cputype, prg.header.cpusubtype).map_or(String::new(), |x| x.to_lowercase()),
-                                    dependencies: prg.libs.iter().map(|x| x.to_string()).skip(1).collect(),
-                                })
+                    arches: arches.iter_arches().enumerate().filter_map(|(index, arch)| {
+                        let arch = match arch {
+                            Ok(fat_arch) => fat_arch,
+                            Err(e) => return Some(Err(e.to_string())),
+                        };
+                        let prg = match arches.get(index) {
+                            Ok(SingleArch::MachO(prg)) => prg,
+                            Ok(SingleArch::Archive(_)) => return None,
+                            Err(e) => return Some(Err(e.to_string())),
+                        };
+                        let magic_bytes = prg.header.magic.to_le_bytes().to_vec();
+                        Some(Ok(BinaryArch {
+                            magic_bytes: MagicBytesMeta{
+                                offset: arch.offset as _,
+                                length: magic_bytes.len(),
+                                bytes: magic_bytes
                             },
-                            SingleArch::Archive(_) => todo!(),
-                        }
+                            format: "mach-o",
+                            arch: goblin::mach::cputype::get_arch_name_from_types(prg.header.cputype, prg.header.cpusubtype).map_or(String::new(), |x| x.to_lowercase()),
+                            dependencies: prg.libs.iter().map(|x| x.to_string()).skip(1).collect(),
+                        }))
                     }).collect::<Result<Vec<_>, String>>()?,
                     magic_bytes: Some(MagicBytesMeta{
                         offset: 0,
