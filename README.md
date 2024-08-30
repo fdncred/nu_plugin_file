@@ -28,7 +28,7 @@ Examples:
   │ magic_bytes  │ [FF, D8] │
   ╰──────────────┴──────────╯
 ```
-## Example with binary
+## Example with MacOS executable
 ```nushell
 ❯ file ~/.cargo/bin/nu | table -e 
 ╭─────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────╮
