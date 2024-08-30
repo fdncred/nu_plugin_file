@@ -15,24 +15,34 @@ pub struct BinaryArch {
     pub format: &'static str,
     pub arch: String,
     pub dependencies: Vec<String>,
+    pub rpaths: Vec<String>,
 }
 impl BinaryArch {
     pub fn into_value(&self, span: Span) -> Value {
-        Value::record(
-            record!(
-                "arch" => Value::string(&self.arch, span),
-                "format" => Value::string(self.format, span),
-                "dependencies" => Value::list(
-                    self
-                        .dependencies
+        let mut value = record!(
+            "arch" => Value::string(&self.arch, span),
+            "format" => Value::string(self.format, span),
+            "dependencies" => Value::list(
+                self
+                    .dependencies
+                    .iter()
+                    .map(|x| Value::string(x, span))
+                    .collect(),
+                span
+            )
+        );
+        if !self.rpaths.is_empty() {
+            value.push("rpaths", Value::list(
+                self
+                        .rpaths
                         .iter()
                         .map(|x| Value::string(x, span))
                         .collect(),
                     span
                 )
-            ),
-            span
-        )
+            );
+        }
+        Value::record(value, span)
     }
 }
 impl Binary {
@@ -72,6 +82,7 @@ impl Binary {
                             format: "mach-o",
                             arch: goblin::mach::cputype::get_arch_name_from_types(prg.header.cputype, prg.header.cpusubtype).map_or(String::new(), |x| x.to_lowercase()),
                             dependencies: prg.libs.iter().map(|x| x.to_string()).skip(1).collect(),
+                            rpaths: prg.rpaths.into_iter().map(|x| x.to_string()).collect(),
                         }
                     ],
                     magic_bytes: None
@@ -100,6 +111,7 @@ impl Binary {
                             format: "mach-o",
                             arch: goblin::mach::cputype::get_arch_name_from_types(prg.header.cputype, prg.header.cpusubtype).map_or(String::new(), |x| x.to_lowercase()),
                             dependencies: prg.libs.iter().map(|x| x.to_string()).skip(1).collect(),
+                            rpaths: prg.rpaths.into_iter().map(|x| x.to_string()).collect(),
                         }))
                     }).collect::<Result<Vec<_>, String>>()?,
                     magic_bytes: Some(MagicBytesMeta{
@@ -123,6 +135,7 @@ impl Binary {
                             format: if prg.is_64 {"pe32+"} else {"pe32"},
                             arch: goblin::pe::header::machine_to_str(prg.header.coff_header.machine).to_lowercase(),
                             dependencies: prg.libraries.iter().map(|x| x.to_string()).collect(),
+                            rpaths: Vec::new(),
                         }
                     ],
                     magic_bytes: Some(MagicBytesMeta{
@@ -145,6 +158,7 @@ impl Binary {
                             format:  if prg.is_64 {"elf64"} else {"elf32"},
                             arch: goblin::elf::header::machine_to_str(prg.header.e_machine).to_lowercase(),
                             dependencies: prg.libraries.iter().map(|x| x.to_string()).collect(),
+                            rpaths: prg.rpaths.into_iter().map(|x| x.to_string()).collect(),
                         }
                     ],
                     magic_bytes: None
