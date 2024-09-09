@@ -32,3 +32,11 @@ goblin = { version = "0.8.2", optional = true }
 [features]
 default = ["executables"]
 executables = ["goblin"]
+
+[profile.release]
+opt-level = "s"     # Optimize for size
+strip = "debuginfo"
+lto = "thin"
+
+[profile.dev]
+opt-level = 0
