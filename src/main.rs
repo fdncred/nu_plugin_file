@@ -1,10 +1,10 @@
 // Attribution: spacedrive
 // https://github.com/spacedriveapp/spacedrive/tree/main/crates/file-ext
+#[cfg(feature = "executables")]
+pub mod executable;
 pub mod extensions;
 pub mod kind;
 pub mod magic;
-#[cfg(feature = "executables")]
-pub mod executable;
 #[cfg(feature = "executables")]
 use executable::BinaryArch;
 
@@ -33,7 +33,12 @@ impl Plugin for FilePlugin {
 }
 
 fn is_windows_absolute_path(path: &str) -> bool {
-    path.starts_with(r"\\") || path.chars().skip_while(|c| c.is_alphabetic()).take(1).eq(":".chars())
+    path.starts_with(r"\\")
+        || path
+            .chars()
+            .skip_while(|c| c.is_alphabetic())
+            .take(1)
+            .eq(":".chars())
 }
 
 struct Implementation;
@@ -45,7 +50,7 @@ impl SimplePluginCommand for Implementation {
         "file"
     }
 
-    fn description(&self) -> &str {
+    fn usage(&self) -> &str {
         "View file format information"
     }
 
@@ -83,7 +88,7 @@ impl SimplePluginCommand for Implementation {
             return Ok(Value::nothing(call.head));
         };
         let span = filename.span;
-        
+
         let filename = if filename.item.starts_with('~') {
             let home_dir = match home_dir() {
                 Some(path) => path,
@@ -100,7 +105,8 @@ impl SimplePluginCommand for Implementation {
             };
             filename.item.replace('~', home_dir)
         } else if (cfg!(target_family = "unix") && filename.item.starts_with('/'))
-                  || (cfg!(target_family = "windows") && is_windows_absolute_path(&filename.item)) {
+            || (cfg!(target_family = "windows") && is_windows_absolute_path(&filename.item))
+        {
             filename.item
         } else {
             match engine.get_current_dir() {
@@ -166,7 +172,9 @@ impl SimplePluginCommand for Implementation {
                 }
                 #[cfg(feature = "executables")]
                 Extension::Executable(_) => {
-                    let bin = crate::executable::Binary::parse(&canon_path).map_err(|e| LabeledError::new(e.to_string()).with_label(e.to_string(), span))?;
+                    let bin = crate::executable::Binary::parse(&canon_path).map_err(|e| {
+                        LabeledError::new(e.to_string()).with_label(e.to_string(), span)
+                    })?;
                     return Ok(get_executable_format_details(bin, span));
                 }
                 #[cfg(not(feature = "executables"))]
@@ -245,11 +253,13 @@ impl SimplePluginCommand for Implementation {
             None => {
                 #[cfg(feature = "executables")]
                 if executable::Binary::has_magic_bytes(&canon_path) {
-                    let bin = crate::executable::Binary::parse(&canon_path).map_err(|e| LabeledError::new(e.to_string()).with_label(e.to_string(), span))?;
+                    let bin = crate::executable::Binary::parse(&canon_path).map_err(|e| {
+                        LabeledError::new(e.to_string()).with_label(e.to_string(), span)
+                    })?;
                     return Ok(get_executable_format_details(bin, span));
                 }
                 Ok(Value::nothing(call.head))
-            },
+            }
         }
     }
 }
@@ -257,7 +267,11 @@ impl SimplePluginCommand for Implementation {
 fn get_executable_format_details(bin: executable::Binary, span: Span) -> Value {
     let magics = std::iter::once(bin.magic_bytes.as_ref())
         .flatten()
-        .chain(bin.arches.iter().map(|BinaryArch{magic_bytes, ..}| magic_bytes))
+        .chain(
+            bin.arches
+                .iter()
+                .map(|BinaryArch { magic_bytes, .. }| magic_bytes),
+        )
         .map(|magic_bytes| {
             Value::record(
                 record!(
@@ -278,7 +292,6 @@ fn get_executable_format_details(bin: executable::Binary, span: Span) -> Value {
         ),
         span,
     )
-
 }
 fn get_magic_details(
     magic: Vec<MagicBytesMeta>,
