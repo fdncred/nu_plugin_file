@@ -50,7 +50,7 @@ impl SimplePluginCommand for Implementation {
         "file"
     }
 
-    fn usage(&self) -> &str {
+    fn description(&self) -> &str {
         "View file format information"
     }
 
