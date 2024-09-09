@@ -6,6 +6,7 @@ edition = "2021"
 repository = "https://github.com/fdncred/nu_plugin_file"
 description = "a nushell plugin called file"
 license = "AGPL-3.0-only"
+exclude = ["tests"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
