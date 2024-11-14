@@ -12,9 +12,9 @@ exclude = ["tests"]
 
 [dependencies]
 # nushell dependencies
-nu-plugin = { version = "0.100.0", path = "../nushell/crates/nu-plugin" }
-nu-protocol = { version = "0.100.0", path = "../nushell/crates/nu-protocol" }
-nu-path = { version = "0.100.0", path = "../nushell/crates/nu-path" }
+nu-plugin = "0.100.0"
+nu-protocol = "0.100.0"
+nu-path = "0.100.0"
 
 # for local development, you can use a path dependency
 # nu-plugin = { path = "../nushell/crates/nu-plugin", version = "0.98.0" }
