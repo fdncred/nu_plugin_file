@@ -1,6 +1,6 @@
 [package]
 name = "nu_plugin_file"
-version = "0.12.0"
+version = "0.13.0"
 authors = ["Darren Schroeder", "glcraft"]
 edition = "2021"
 repository = "https://github.com/fdncred/nu_plugin_file"
@@ -12,9 +12,9 @@ exclude = ["tests"]
 
 [dependencies]
 # nushell dependencies
-nu-plugin = "0.101.0"
-nu-protocol = "0.101.0"
-nu-path = "0.101.0"
+nu-plugin = "0.102.0"
+nu-protocol = "0.102.0"
+nu-path = "0.102.0"
 
 # for local development, you can use a path dependency
 # nu-plugin = { path = "../nushell/crates/nu-plugin", version = "0.98.0" }
@@ -23,15 +23,15 @@ nu-path = "0.101.0"
 
 serde = { version = "1.0.216", features = ["derive"] }
 serde_json = "1.0.134"
-strum = { version = "0.26.3", features = ["derive"] }
-strum_macros = "0.26.4"
+strum = { version = "0.27.0", features = ["derive"] }
+strum_macros = "0.27.0"
 specta = "1.0.5"
 home = "0.5.11"
-itertools = "0.13.0"
+itertools = "0.14.0"
 goblin = { version = "0.9.2", optional = true }
 
 [dev-dependencies]
-nu-plugin-test-support = "0.101.0"
+nu-plugin-test-support = "0.102.0"
 # nu-plugin-test-support = { path = "../nushell/crates/nu-plugin-test-support" }
 
 [features]
