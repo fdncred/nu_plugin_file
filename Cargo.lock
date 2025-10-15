@@ -1076,7 +1076,7 @@ dependencies = [
 
 [[package]]
 name = "nu_plugin_file"
-version = "0.19.0"
+version = "0.19.1"
 dependencies = [
  "goblin",
  "home",
