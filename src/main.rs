@@ -12,11 +12,11 @@ use crate::{extensions::Extension, magic::MagicBytes, magic::MagicBytesMeta};
 
 use home::home_dir;
 use nu_plugin::{
-    serve_plugin, EngineInterface, EvaluatedCall, MsgPackSerializer, Plugin, PluginCommand,
-    SimplePluginCommand,
+    EngineInterface, EvaluatedCall, MsgPackSerializer, Plugin, PluginCommand, SimplePluginCommand,
+    serve_plugin,
 };
 use nu_protocol::{
-    record, Category, Example, LabeledError, Signature, Span, Spanned, SyntaxShape, Value,
+    Category, Example, LabeledError, Signature, Span, Spanned, SyntaxShape, Value, record,
 };
 use std::path::Path;
 
@@ -64,7 +64,7 @@ impl SimplePluginCommand for Implementation {
             .category(Category::Experimental)
     }
 
-    fn examples(&self) -> Vec<Example> {
+    fn examples(&self) -> Vec<Example<'_>> {
         vec![Example {
             description: "Get format information from file",
             example: "file some.jpg",
@@ -94,7 +94,7 @@ impl SimplePluginCommand for Implementation {
                 Some(path) => path,
                 None => {
                     return Err(LabeledError::new("Cannot find home directory")
-                        .with_label("Cannot find home directory", call.head))
+                        .with_label("Cannot find home directory", call.head));
                 }
             };
             let Some(home_dir) = home_dir.to_str() else {
@@ -112,7 +112,7 @@ impl SimplePluginCommand for Implementation {
             match engine.get_current_dir() {
                 Ok(dir) => dir.to_string() + std::path::MAIN_SEPARATOR_STR + &filename.item,
                 Err(e) => {
-                    return Err(LabeledError::new(e.to_string()).with_label(e.to_string(), span))
+                    return Err(LabeledError::new(e.to_string()).with_label(e.to_string(), span));
                 }
             }
         };
