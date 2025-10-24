@@ -18,7 +18,7 @@ use nu_plugin::{
 use nu_protocol::{
     Category, Example, LabeledError, Signature, Span, Spanned, SyntaxShape, Value, record,
 };
-use std::path::Path;
+use std::{fs, path::Path};
 
 struct FilePlugin;
 
@@ -278,14 +278,19 @@ impl SimplePluginCommand for Implementation {
 
 fn infer_mime(path: &Path) -> String {
     if path.is_dir() {
-        "inode/directory".to_string()
-    } else {
-        infer::get_from_path(path)
-            .ok()
-            .flatten()
-            .map(|t| t.mime_type().to_string())
-            .unwrap_or_else(|| "application/octet-stream".to_string())
+        return "inode/directory".to_string();
     }
+
+    let mut info = infer::Infer::new();
+    info.add("text/plain", "txt", |buf| std::str::from_utf8(buf).is_ok());
+
+    let Ok(data) = fs::read(path) else {
+        return "application/octet-stream".to_string();
+    };
+
+    info.get(&data)
+        .map(|t| t.mime_type().to_string())
+        .unwrap_or_else(|| "application/octet-stream".to_string())
 }
 
 #[cfg(feature = "executables")]
