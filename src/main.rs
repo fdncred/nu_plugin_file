@@ -18,7 +18,7 @@ use nu_plugin::{
 use nu_protocol::{
     Category, Example, LabeledError, Signature, Span, Spanned, SyntaxShape, Value, record,
 };
-use std::path::Path;
+use std::{fs, path::Path};
 
 struct FilePlugin;
 
@@ -58,7 +58,7 @@ impl SimplePluginCommand for Implementation {
         Signature::build(PluginCommand::name(self))
             .required(
                 "filename",
-                SyntaxShape::String,
+                SyntaxShape::Filepath,
                 "full path to file name to inspect",
             )
             .category(Category::Experimental)
@@ -71,6 +71,7 @@ impl SimplePluginCommand for Implementation {
             result: Some(Value::test_record(record!(
                         "description" => Value::test_string("Image"),
                         "format" => Value::test_string("jpg"),
+                        "mime" => Value::test_string("image/jpeg"),
                         "magic_offset" => Value::test_string("0"),
                         "magic_length" => Value::test_string("2"),
                         "magic_bytes" => Value::test_string("[FF, D8]")))),
@@ -122,60 +123,66 @@ impl SimplePluginCommand for Implementation {
             Err(e) => return Err(LabeledError::new(e.to_string()).with_label(e.to_string(), span)),
         };
         let file_format = extensions::Extension::resolve_conflicting(&canon_path, true);
+        let mime = infer_mime(&canon_path);
 
         match file_format {
             Some(file_format) => match file_format {
                 Extension::Document(document_format) => {
                     let magic = document_format.magic_bytes_meta();
-                    return Ok(get_magic_details(
+                    Ok(get_magic_details(
                         magic,
                         "Document",
                         document_format.to_string(),
                         span,
-                    ));
+                        &mime,
+                    ))
                 }
                 Extension::Video(video_format) => {
                     let magic = video_format.magic_bytes_meta();
-                    return Ok(get_magic_details(
+                    Ok(get_magic_details(
                         magic,
                         "Video",
                         video_format.to_string(),
                         span,
-                    ));
+                        &mime,
+                    ))
                 }
                 Extension::Image(image_format) => {
                     let magic = image_format.magic_bytes_meta();
-                    return Ok(get_magic_details(
+                    Ok(get_magic_details(
                         magic,
                         "Image",
                         image_format.to_string(),
                         span,
-                    ));
+                        &mime,
+                    ))
                 }
                 Extension::Audio(audio_format) => {
                     let magic = audio_format.magic_bytes_meta();
-                    return Ok(get_magic_details(
+                    Ok(get_magic_details(
                         magic,
                         "Audio",
                         audio_format.to_string(),
                         span,
-                    ));
+                        &mime,
+                    ))
                 }
                 Extension::Archive(archive_format) => {
                     let magic = archive_format.magic_bytes_meta();
-                    return Ok(get_magic_details(
+                    Ok(get_magic_details(
                         magic,
                         "Archive",
                         archive_format.to_string(),
                         span,
-                    ));
+                        &mime,
+                    ))
                 }
                 #[cfg(feature = "executables")]
                 Extension::Executable(_) => {
                     let bin = crate::executable::Binary::parse(&canon_path).map_err(|e| {
                         LabeledError::new(e.to_string()).with_label(e.to_string(), span)
                     })?;
-                    return Ok(get_executable_format_details(bin, span));
+                    Ok(get_executable_format_details(bin, span, &mime))
                 }
                 #[cfg(not(feature = "executables"))]
                 Extension::Executable(executable_format) => {
@@ -185,69 +192,71 @@ impl SimplePluginCommand for Implementation {
                         "Encrypted",
                         executable_format.to_string(),
                         span,
+                        &mime,
                     ));
                 }
-                Extension::Text(text_format) => {
-                    return Ok(get_text_format_details(
-                        "Text",
-                        text_format.to_string(),
-                        span,
-                    ));
-                }
+                Extension::Text(text_format) => Ok(get_text_format_details(
+                    "Text",
+                    text_format.to_string(),
+                    span,
+                )),
                 Extension::Encrypted(encrypted_format) => {
                     let magic = encrypted_format.magic_bytes_meta();
-                    return Ok(get_magic_details(
+                    Ok(get_magic_details(
                         magic,
                         "Encrypted",
                         encrypted_format.to_string(),
                         span,
-                    ));
+                        &mime,
+                    ))
                 }
                 Extension::Key(key_format) => {
-                    return Ok(get_text_format_details("Key", key_format.to_string(), span));
+                    Ok(get_text_format_details("Key", key_format.to_string(), span))
                 }
                 Extension::Font(font_format) => {
                     let magic = font_format.magic_bytes_meta();
-                    return Ok(get_magic_details(
+                    Ok(get_magic_details(
                         magic,
                         "Font",
                         font_format.to_string(),
                         span,
-                    ));
+                        &mime,
+                    ))
                 }
                 Extension::Mesh(mesh_format) => {
                     let magic = mesh_format.magic_bytes_meta();
-                    return Ok(get_magic_details(
+                    Ok(get_magic_details(
                         magic,
                         "Mesh",
                         mesh_format.to_string(),
                         span,
-                    ));
+                        &mime,
+                    ))
                 }
-                Extension::Code(code_format) => {
-                    return Ok(get_text_format_details(
-                        "Code",
-                        code_format.to_string(),
-                        span,
-                    ));
-                }
+                Extension::Code(code_format) => Ok(get_text_format_details(
+                    "Code",
+                    code_format.to_string(),
+                    span,
+                )),
                 Extension::Database(database_format) => {
                     let magic = database_format.magic_bytes_meta();
-                    return Ok(get_magic_details(
+                    Ok(get_magic_details(
                         magic,
                         "Database",
                         database_format.to_string(),
                         span,
-                    ));
+                        &mime,
+                    ))
                 }
                 Extension::Book(book_format) => {
                     let magic = book_format.magic_bytes_meta();
-                    return Ok(get_magic_details(
+                    Ok(get_magic_details(
                         magic,
                         "Book",
                         book_format.to_string(),
                         span,
-                    ));
+                        &mime,
+                    ))
                 }
             },
             None => {
@@ -256,15 +265,36 @@ impl SimplePluginCommand for Implementation {
                     let bin = crate::executable::Binary::parse(&canon_path).map_err(|e| {
                         LabeledError::new(e.to_string()).with_label(e.to_string(), span)
                     })?;
-                    return Ok(get_executable_format_details(bin, span));
+                    return Ok(get_executable_format_details(bin, span, &mime));
                 }
-                Ok(Value::nothing(call.head))
+                Ok(Value::record(
+                    record!("mime" => Value::string(&mime, call.head)),
+                    call.head,
+                ))
             }
         }
     }
 }
+
+fn infer_mime(path: &Path) -> String {
+    if path.is_dir() {
+        return "inode/directory".to_string();
+    }
+
+    let mut info = infer::Infer::new();
+    info.add("text/plain", "txt", |buf| std::str::from_utf8(buf).is_ok());
+
+    let Ok(data) = fs::read(path) else {
+        return "application/octet-stream".to_string();
+    };
+
+    info.get(&data)
+        .map(|t| t.mime_type().to_string())
+        .unwrap_or_else(|| "application/octet-stream".to_string())
+}
+
 #[cfg(feature = "executables")]
-fn get_executable_format_details(bin: executable::Binary, span: Span) -> Value {
+fn get_executable_format_details(bin: executable::Binary, span: Span, mime: &str) -> Value {
     let magics = std::iter::once(bin.magic_bytes.as_ref())
         .flatten()
         .chain(
@@ -287,17 +317,20 @@ fn get_executable_format_details(bin: executable::Binary, span: Span) -> Value {
         record!(
         "description" => Value::string(bin.description(), span),
         "format" => Value::string("Executable", span),
+        "mime" => Value::string(mime, span),
         "magics" => Value::list(magics, span),
         "details" => bin.into_value(span),
         ),
         span,
     )
 }
+
 fn get_magic_details(
     magic: Vec<MagicBytesMeta>,
     format: &str,
     data_format: String,
     span: Span,
+    mime: &str,
 ) -> Value {
     let magics = magic
         .into_iter()
@@ -316,6 +349,7 @@ fn get_magic_details(
         record!(
         "description" => Value::string(format, span),
         "format" => Value::string(data_format, span),
+        "mime" => Value::string(mime, span),
         "magics" => Value::list(magics, span)
         ),
         span,
@@ -323,10 +357,19 @@ fn get_magic_details(
 }
 
 fn get_text_format_details(format: &str, text_format: String, span: Span) -> Value {
+    let mime = format!(
+        "text/{}",
+        if text_format == "txt" {
+            "plain"
+        } else {
+            &text_format
+        }
+    );
     Value::record(
         record!(
         "description" => Value::string(format, span),
         "format" => Value::string(text_format, span),
+        "mime" => Value::string(mime, span),
         "magics" => Value::nothing(span),
         ),
         span,
