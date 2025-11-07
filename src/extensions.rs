@@ -190,6 +190,8 @@ extension_category_enum! {
         Cmd,
         Sh,
         Ps1,
+        Nu,
+        Nuon,
     }
 }
 
