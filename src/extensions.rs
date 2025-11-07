@@ -186,6 +186,10 @@ extension_category_enum! {
         Xml,
         Csv,
         Cfg,
+        Bat,
+        Cmd,
+        Sh,
+        Ps1,
     }
 }
 
