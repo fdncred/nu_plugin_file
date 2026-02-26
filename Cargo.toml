@@ -46,3 +46,8 @@ lto = "thin"
 
 [profile.dev]
 opt-level = 0
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
