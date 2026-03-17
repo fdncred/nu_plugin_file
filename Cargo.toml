@@ -30,6 +30,7 @@ home = "0.5.12"
 infer = "0.19.0"
 itertools = "0.14.0"
 goblin = { version = "0.10.5", optional = true }
+magika = "1.0.0"
 
 [dev-dependencies]
 nu-plugin-test-support = "0.111.0"
