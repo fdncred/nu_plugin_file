@@ -61,6 +61,7 @@ impl SimplePluginCommand for Implementation {
                 SyntaxShape::Filepath,
                 "full path to file name to inspect",
             )
+            .switch("magika", "Use magika AI-based content type detection", None)
             .category(Category::Experimental)
     }
 
@@ -122,6 +123,11 @@ impl SimplePluginCommand for Implementation {
             Ok(path) => path,
             Err(e) => return Err(LabeledError::new(e.to_string()).with_label(e.to_string(), span)),
         };
+
+        if call.has_flag("magika")? {
+            return identify_with_magika(&canon_path, span);
+        }
+
         let file_format = extensions::Extension::resolve_conflicting(&canon_path, true);
         let mime = infer_mime(&canon_path);
 
@@ -374,6 +380,36 @@ fn get_text_format_details(format: &str, text_format: String, span: Span) -> Val
         ),
         span,
     )
+}
+
+fn identify_with_magika(
+    path: &Path,
+    span: Span,
+) -> Result<Value, LabeledError> {
+    let mut session = magika::Session::new().map_err(|e| {
+        LabeledError::new(format!("Failed to create magika session: {e}"))
+            .with_label("magika error", span)
+    })?;
+
+    let file_type = session.identify_file_sync(path).map_err(|e| {
+        LabeledError::new(format!("Failed to identify file: {e}"))
+            .with_label("magika error", span)
+    })?;
+
+    let info = file_type.info();
+    let score = file_type.score();
+
+    Ok(Value::record(
+        record!(
+            "description" => Value::string(info.description, span),
+            "group" => Value::string(info.group, span),
+            "mime" => Value::string(info.mime_type, span),
+            "label" => Value::string(info.label, span),
+            "score" => Value::float(score as f64, span),
+            "is_text" => Value::bool(info.is_text, span),
+        ),
+        span,
+    ))
 }
 
 fn main() {
