@@ -1,6 +1,6 @@
 [package]
 name = "nu_plugin_file"
-version = "0.23.0"
+version = "0.24.0"
 authors = ["Darren Schroeder", "glcraft"]
 edition = "2024"
 repository = "https://github.com/fdncred/nu_plugin_file"
@@ -12,10 +12,10 @@ exclude = ["tests"]
 
 [dependencies]
 # nushell dependencies
-nu-plugin = "0.112.2"
-nu-protocol = "0.112.2"
-nu-path = "0.112.2"
-ort = "=2.0.0-rc.11" # Including here means we get statical linking
+nu-plugin = "0.113.0"
+nu-protocol = "0.113.0"
+nu-path = "0.113.0"
+ort = "=2.0.0-rc.12" # Including here means we get statical linking
 
 # for local development, you can use a path dependency
 # nu-plugin = { path = "../nushell/crates/nu-plugin", version = "0.98.0" }
@@ -23,18 +23,18 @@ ort = "=2.0.0-rc.11" # Including here means we get statical linking
 # nu-path = { path = "../nushell/crates/nu-path", version = "0.98.0" }
 
 serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.149"
+serde_json = "1.0.150"
 strum = { version = "0.28.0", features = ["derive"] }
 strum_macros = "0.28.0"
 specta = "1.0.5"
 home = "0.5.12"
 infer = "0.19.0"
 itertools = "0.14.0"
-goblin = { version = "0.10.5", optional = true }
-magika = "1.0.1"
+goblin = { version = "0.10.7", optional = true }
+magika = "1.1.0"
 
 [dev-dependencies]
-nu-plugin-test-support = "0.112.2"
+nu-plugin-test-support = "0.113.0"
 # nu-plugin-test-support = { path = "../nushell/crates/nu-plugin-test-support" }
 
 [features]
