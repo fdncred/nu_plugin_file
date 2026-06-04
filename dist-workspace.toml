@@ -7,8 +7,8 @@ members = ["cargo:."]
 cargo-dist-version = "0.32.0"
 # CI backends to support
 ci = ["github"]
-# Trigger release CI via workflow_dispatch instead of tag push
-dispatch-releases = true
+# Allow manual workflow edits for CI scripts that dist doesn't generate
+allow-dirty = ["ci"]
 # The installers to generate for each app
 installers = ["shell", "powershell"]
 # Target platforms to build apps for (Rust target-triple syntax)
