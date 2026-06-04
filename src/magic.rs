@@ -33,9 +33,7 @@ macro_rules! magic_byte_value {
     (_) => {
         0 as u8
     };
-    ($val:literal) => {{
-        $val as u8
-    }};
+    ($val:literal) => {{ $val as u8 }};
 }
 // pub(crate) use magic_byte_value;
 
@@ -185,7 +183,7 @@ impl Extension {
         let ext = Extension::from_str(ext_str)?;
 
         let Ok(ref mut file) = File::open(&path) else {
-            return None
+            return None;
         };
 
         match ext {
