@@ -18,7 +18,7 @@ use nu_plugin::{
 use nu_protocol::{
     Category, Example, LabeledError, Signature, Span, Spanned, SyntaxShape, Value, record,
 };
-use std::{fs, path::Path};
+use std::{fs::File, io::Read, path::Path};
 
 struct FilePlugin;
 
@@ -285,9 +285,12 @@ fn infer_mime(path: &Path) -> String {
     let mut info = infer::Infer::new();
     info.add("text/plain", "txt", |buf| std::str::from_utf8(buf).is_ok());
 
-    let Ok(data) = fs::read(path) else {
+    let Ok(mut file) = File::open(path) else {
         return "application/octet-stream".to_string();
     };
+    let mut data = vec![0; 8192];
+    let n = file.read(&mut data).unwrap_or(0);
+    data.truncate(n);
 
     info.get(&data)
         .map(|t| t.mime_type().to_string())
