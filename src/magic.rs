@@ -147,7 +147,7 @@ macro_rules! extension_category_enum {
 						$( MagicBytesMeta {
 							length: (&[$($crate::magic_byte_value!($magic_bytes)),*] as &[u8]).len(),
 							offset: $crate::magic_byte_offset!($($offset)?),
-							bytes: ((&[$($crate::magic_byte_value!($magic_bytes)),*] as &[u8])).to_vec(),
+							bytes: (&[$($crate::magic_byte_value!($magic_bytes)),*] as &[u8]).to_vec(),
 						}, )+
 					] ),*
 				}

@@ -320,7 +320,7 @@ mod test {
     fn magic_bytes() {
         fn test_path(subpath: &str) -> Option<Extension> {
             println!("testing {}...", subpath);
-            Extension::resolve_conflicting(subpath.split('.').last().unwrap(), true)
+            Extension::resolve_conflicting(subpath.split('.').next_back().unwrap(), true)
         }
         // Video extension tests
         assert_eq!(

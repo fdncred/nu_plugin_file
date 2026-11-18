@@ -205,12 +205,8 @@ impl Binary {
             return true;
         }
         let magic16 = u16::from_le_bytes([buf[0], buf[1]]);
-        if magic16 == goblin::pe::optional_header::MAGIC_32
+        magic16 == goblin::pe::optional_header::MAGIC_32
             || magic16 == goblin::pe::optional_header::MAGIC_64
-        {
-            return true;
-        }
-        false
     }
     pub fn description(&self) -> String {
         let desc_arch = |arch: &BinaryArch| format!("{} binary, {}", arch.format, arch.arch);
